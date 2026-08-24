@@ -21,8 +21,11 @@ export function SiteHeader() {
   return (
     <>
     <div className="site-top-actions">
-      <div className="site-top-left"><VaadaLogo className="site-corner-logo" tagline /><LiveVisitors /></div>
-      <div className="site-top-right">{pathname !== "/" && <BackButton className="route-back-control" />}<a className="site-app-launch" href={mobileAppUrl}><span aria-hidden="true">▣</span> Launch app</a></div>
+      <div className="site-top-left">
+        <div className="site-brand-row"><VaadaLogo className="site-corner-logo" tagline /><LiveVisitors /></div>
+        {pathname !== "/" && <BackButton className="route-back-control" />}
+      </div>
+      <div className="site-top-right"><a className="site-app-launch" href={mobileAppUrl}><span aria-hidden="true">▣</span> Launch app</a></div>
     </div>
     <header className="floating-dock site-dock">
       <nav className="dock-links" aria-label="Primary navigation">

@@ -55,6 +55,7 @@ export interface Commitment {
   category: string;
   status: CommitmentStatus;
   promisedOn: string;
+  deadlineStart?: string | null;
   deadline: string | null;
   deadlineLabel: string | null;
   progress: number;
@@ -71,6 +72,8 @@ export interface ExtractedDraft {
   promiseText: string;
   sourceUrl: string;
   promisedOn: string;
+  deadlineStart: string;
+  deadlineEnd: string;
   deadlineLabel: string;
   state: string;
   district: string;

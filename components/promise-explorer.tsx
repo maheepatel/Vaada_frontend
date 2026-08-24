@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 import { publicStatusLabel } from "@/lib/status";
 import type { Commitment } from "@/lib/types";
@@ -19,6 +19,7 @@ export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: C
   const [page, setPage] = useState(1);
   const carouselRef = useRef<HTMLDivElement>(null);
   const carouselPaused = useRef(false);
+  const dragState = useRef({ active: false, pointerId: -1, startX: 0, startScrollLeft: 0 });
   const states = useMemo(() => ["All states", ...new Set(commitments.map((item) => item.state))], [commitments]);
   const districts = useMemo(() => ["All districts", ...new Set(commitments.filter((item) => state === "All states" || item.state === state).map((item) => item.district))], [commitments, state]);
   const sectors = useMemo(() => ["All sectors", ...new Set(commitments.map((item) => item.category))], [commitments]);
@@ -29,6 +30,7 @@ export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: C
   const activePage = Math.min(page, pageCount);
   const visible = mode === "carousel" ? filtered.slice(0, 6) : filtered.slice((activePage - 1) * pageSize, activePage * pageSize);
   const loopItems = mode === "carousel" && visible.length > 1 ? [...visible, ...visible, ...visible] : visible;
+  const carouselKey = visible.map((item) => item.id).join("|");
   const data = sheet === "sector" ? { title: "Choose a sector", values: sectors, active: sector, set: setSector } : sheet === "status" ? { title: "Choose a status", values: statuses, active: status, set: setStatus } : null;
 
   useEffect(() => {
@@ -53,7 +55,37 @@ export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: C
     frame = requestAnimationFrame(tick);
     viewport.addEventListener("scroll", normalize, { passive: true });
     return () => { cancelAnimationFrame(initialize); cancelAnimationFrame(frame); viewport.removeEventListener("scroll", normalize); };
-  }, [mode, reduceMotion, visible.length]);
+  }, [carouselKey, mode, reduceMotion, visible.length]);
+
+  const startDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
+    carouselPaused.current = true;
+    if (mode !== "carousel" || event.pointerType !== "mouse") return;
+    const viewport = carouselRef.current;
+    if (!viewport) return;
+    dragState.current = { active: true, pointerId: event.pointerId, startX: event.clientX, startScrollLeft: viewport.scrollLeft };
+    viewport.setPointerCapture(event.pointerId);
+  };
+
+  const dragCarousel = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const viewport = carouselRef.current;
+    if (!viewport || !dragState.current.active || dragState.current.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    viewport.scrollLeft = dragState.current.startScrollLeft - (event.clientX - dragState.current.startX);
+  };
+
+  const stopDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const viewport = carouselRef.current;
+    if (viewport?.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
+    dragState.current.active = false;
+    if (event.pointerType !== "mouse") carouselPaused.current = false;
+  };
+
+  const wheelCarousel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    const viewport = carouselRef.current;
+    if (!viewport || mode !== "carousel" || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
+    event.preventDefault();
+    viewport.scrollLeft += event.deltaY;
+  };
 
   return <div className="website-explorer">
     <div className="website-filter-bar" aria-label="Promise filters">
@@ -62,14 +94,14 @@ export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: C
       <button type="button" onClick={() => setSheet("status")}><span>Status</span><strong>{status === "All status" ? "All status" : status}</strong><i aria-hidden="true" /></button>
     </div>
     <div className="explorer-count"><span>{String(filtered.length).padStart(2,"0")} RECORDS</span><span>{mode === "carousel" ? `SHOWING ${String(visible.length).padStart(2,"0")} FEATURED` : `PAGE ${String(activePage).padStart(2,"0")} OF ${String(pageCount).padStart(2,"0")}`}</span></div>
-    <div ref={carouselRef} className={`website-promise-grid ${mode === "carousel" ? "carousel-grid" : ""}`} onMouseEnter={() => { carouselPaused.current = true; }} onMouseLeave={() => { carouselPaused.current = false; }} onPointerDown={() => { carouselPaused.current = true; }} onPointerUp={() => { carouselPaused.current = false; }} onFocusCapture={() => { carouselPaused.current = true; }} onBlurCapture={() => { carouselPaused.current = false; }}>
+    <div ref={carouselRef} className={`website-promise-grid ${mode === "carousel" ? "carousel-grid" : ""}`} onMouseEnter={() => { carouselPaused.current = true; }} onMouseLeave={() => { carouselPaused.current = false; dragState.current.active = false; }} onPointerDown={startDragging} onPointerMove={dragCarousel} onPointerUp={stopDragging} onPointerCancel={stopDragging} onWheel={wheelCarousel} onFocusCapture={() => { carouselPaused.current = true; }} onBlurCapture={() => { carouselPaused.current = false; }}>
       <div className={mode === "carousel" ? "carousel-track" : "website-grid-track"}>
       {loopItems.map((item,index) => { const stage = promiseStage(item); const hasProof = hasAcceptedProof(item); const displayIndex = mode === "carousel" ? index % Math.max(visible.length, 1) : (activePage - 1) * pageSize + index; const decorativeCopy = mode === "carousel" && Math.floor(index / visible.length) !== 1; return <article className="website-promise-card" aria-hidden={decorativeCopy || undefined} key={`${item.id}-${index}`}>
         <div className="website-card-head"><span className="mobile-card-number">{String(displayIndex + 1).padStart(2,"0")}</span><span className={`status ${item.status === "broken" ? "late" : item.status === "fulfilled" ? "done" : "progress"}`}><i />{publicStatusLabel(item.status)}</span></div>
         <p className="mobile-card-location">{item.state} · {item.district} · {item.category}</p>
         <h2>{item.title}</h2><p className="website-card-summary">{item.detail}</p>
         <div className="mobile-card-authority"><span>RESPONSIBLE OFFICE</span><strong>{item.accountableOffice}</strong></div>
-        <dl className="mobile-card-dates"><div><dt>Promised</dt><dd>{formatPublicDate(item.promisedOn)}</dd></div><div><dt>Deadline</dt><dd>{formatPublicDate(item.deadline)}</dd></div></dl>
+        <dl className={`mobile-card-dates ${item.deadlineStart ? "has-window" : ""}`}><div><dt>Promised</dt><dd>{formatPublicDate(item.promisedOn)}</dd></div>{item.deadlineStart && <div><dt>Window starts</dt><dd>{formatPublicDate(item.deadlineStart)}</dd></div>}<div><dt>{item.deadlineStart ? "Window ends" : "Deadline"}</dt><dd>{formatPublicDate(item.deadline)}</dd></div></dl>{item.deadlineLabel && <p className="deadline-window-label">Stated timeframe · {item.deadlineLabel}</p>}
         <div className="website-stage-wrap"><div className="mobile-stage-copy"><span>PROMISE STAGE</span><strong>{promiseStages[stage]}</strong></div><ol className="mobile-stages">{promiseStages.map((label,stageIndex)=><li className={stageIndex<=stage?"reached":""} key={label}><i/><span>{label}</span></li>)}</ol></div>
         <div className="mobile-card-actions"><Link tabIndex={decorativeCopy ? -1 : undefined} className="mobile-record-button" href={`/promises/${item.slug}`}>View record <span>↗</span></Link>{item.status === "fulfilled" && hasProof ? <Link tabIndex={decorativeCopy ? -1 : undefined} className="mobile-proof-button complete" href={`/promises/${item.slug}#completion-proof`}>View proof <span>✓</span></Link> : <Link tabIndex={decorativeCopy ? -1 : undefined} className="mobile-proof-button" href={`/submit?mode=proof&promise=${item.slug}`}>Submit proof <span>＋</span></Link>}</div>
         <div className="mobile-card-progress"><div><span>VERIFIED PROGRESS</span><strong>{item.progress}%</strong></div><div className="progress-track"><span style={{width:`${item.progress}%`}}/></div><small>Reviewed {formatPublicDate(item.lastReviewedAt)}</small></div>
