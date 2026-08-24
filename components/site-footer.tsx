@@ -6,7 +6,7 @@ export function SiteFooter() {
   return (
     <footer>
       <div className="footer-top">
-        <div><VaadaLogo className="footer-mark" tagline /><p>Public promises.<br />Public proof.</p></div>
+        <div><VaadaLogo className="footer-mark" tagline tone="light" /><p>Public promises.<br />Public proof.</p></div>
         <div className="footer-links">
           <div><span>EXPLORE</span><a href="/promises">Register</a><a href="/rankings">Rankings</a><a href="/completed">Completed</a><a href="/states/rajasthan">States</a><a href={mobileAppUrl}>Open mobile app</a></div>
           <div><span>CONTRIBUTE</span><a href="/submit">Record a promise</a><a href="/submit?mode=proof">Submit proof</a><a href="/my-logs">My logs</a></div>

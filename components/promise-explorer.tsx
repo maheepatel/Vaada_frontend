@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useMemo, useRef, useState } from "react";
 import { publicStatusLabel } from "@/lib/status";
 import type { Commitment } from "@/lib/types";
 import { formatPublicDate, hasAcceptedProof, promiseStage, promiseStages } from "@/lib/promise-view";
@@ -10,16 +9,14 @@ import { formatPublicDate, hasAcceptedProof, promiseStage, promiseStages } from 
 type Sheet = "state" | "sector" | "status" | null;
 
 export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: Commitment[]; compact?: boolean; mode?: "grid" | "carousel" }) {
-  const reduceMotion = useReducedMotion();
   const [state, setState] = useState("All states");
   const [district, setDistrict] = useState("All districts");
   const [sector, setSector] = useState("All sectors");
   const [status, setStatus] = useState("All status");
   const [sheet, setSheet] = useState<Sheet>(null);
   const [page, setPage] = useState(1);
+  const [carouselIndex, setCarouselIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
-  const carouselPaused = useRef(false);
-  const dragState = useRef({ active: false, pointerId: -1, startX: 0, startScrollLeft: 0 });
   const states = useMemo(() => ["All states", ...new Set(commitments.map((item) => item.state))], [commitments]);
   const districts = useMemo(() => ["All districts", ...new Set(commitments.filter((item) => state === "All states" || item.state === state).map((item) => item.district))], [commitments, state]);
   const sectors = useMemo(() => ["All sectors", ...new Set(commitments.map((item) => item.category))], [commitments]);
@@ -29,62 +26,20 @@ export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: C
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const activePage = Math.min(page, pageCount);
   const visible = mode === "carousel" ? filtered.slice(0, 6) : filtered.slice((activePage - 1) * pageSize, activePage * pageSize);
-  const loopItems = mode === "carousel" && visible.length > 1 ? [...visible, ...visible, ...visible] : visible;
-  const carouselKey = visible.map((item) => item.id).join("|");
   const data = sheet === "sector" ? { title: "Choose a sector", values: sectors, active: sector, set: setSector } : sheet === "status" ? { title: "Choose a status", values: statuses, active: status, set: setStatus } : null;
 
-  useEffect(() => {
-    const viewport = carouselRef.current;
-    if (mode !== "carousel" || !viewport || visible.length < 2) return;
-    let frame = 0;
-    let previous = performance.now();
-    const normalize = () => {
-      const segment = viewport.scrollWidth / 3;
-      if (!segment) return;
-      if (viewport.scrollLeft < segment * .35) viewport.scrollLeft += segment;
-      else if (viewport.scrollLeft > segment * 1.65) viewport.scrollLeft -= segment;
-    };
-    const initialize = requestAnimationFrame(() => { viewport.scrollLeft = viewport.scrollWidth / 3; });
-    const tick = (now: number) => {
-      const elapsed = Math.min(now - previous, 40);
-      previous = now;
-      if (!reduceMotion && !carouselPaused.current) viewport.scrollLeft += elapsed * .03;
-      normalize();
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    viewport.addEventListener("scroll", normalize, { passive: true });
-    return () => { cancelAnimationFrame(initialize); cancelAnimationFrame(frame); viewport.removeEventListener("scroll", normalize); };
-  }, [carouselKey, mode, reduceMotion, visible.length]);
-
-  const startDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
-    carouselPaused.current = true;
-    if (mode !== "carousel" || event.pointerType !== "mouse") return;
-    const viewport = carouselRef.current;
-    if (!viewport) return;
-    dragState.current = { active: true, pointerId: event.pointerId, startX: event.clientX, startScrollLeft: viewport.scrollLeft };
-    viewport.setPointerCapture(event.pointerId);
+  const resetCarousel = () => {
+    setCarouselIndex(0);
+    carouselRef.current?.scrollTo({ left: 0, behavior: "smooth" });
   };
 
-  const dragCarousel = (event: ReactPointerEvent<HTMLDivElement>) => {
+  const moveCarousel = (direction: -1 | 1) => {
     const viewport = carouselRef.current;
-    if (!viewport || !dragState.current.active || dragState.current.pointerId !== event.pointerId) return;
-    event.preventDefault();
-    viewport.scrollLeft = dragState.current.startScrollLeft - (event.clientX - dragState.current.startX);
-  };
-
-  const stopDragging = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const viewport = carouselRef.current;
-    if (viewport?.hasPointerCapture(event.pointerId)) viewport.releasePointerCapture(event.pointerId);
-    dragState.current.active = false;
-    if (event.pointerType !== "mouse") carouselPaused.current = false;
-  };
-
-  const wheelCarousel = (event: ReactWheelEvent<HTMLDivElement>) => {
-    const viewport = carouselRef.current;
-    if (!viewport || mode !== "carousel" || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventDefault();
-    viewport.scrollLeft += event.deltaY;
+    if (!viewport || visible.length < 2) return;
+    const nextIndex = Math.min(visible.length - 1, Math.max(0, carouselIndex + direction));
+    const target = viewport.querySelector<HTMLElement>(`[data-carousel-index="${nextIndex}"]`);
+    target?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
+    setCarouselIndex(nextIndex);
   };
 
   return <div className="website-explorer">
@@ -94,22 +49,23 @@ export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: C
       <button type="button" onClick={() => setSheet("status")}><span>Status</span><strong>{status === "All status" ? "All status" : status}</strong><i aria-hidden="true" /></button>
     </div>
     <div className="explorer-count"><span>{String(filtered.length).padStart(2,"0")} RECORDS</span><span>{mode === "carousel" ? `SHOWING ${String(visible.length).padStart(2,"0")} FEATURED` : `PAGE ${String(activePage).padStart(2,"0")} OF ${String(pageCount).padStart(2,"0")}`}</span></div>
-    <div ref={carouselRef} className={`website-promise-grid ${mode === "carousel" ? "carousel-grid" : ""}`} onMouseEnter={() => { carouselPaused.current = true; }} onMouseLeave={() => { carouselPaused.current = false; dragState.current.active = false; }} onPointerDown={startDragging} onPointerMove={dragCarousel} onPointerUp={stopDragging} onPointerCancel={stopDragging} onWheel={wheelCarousel} onFocusCapture={() => { carouselPaused.current = true; }} onBlurCapture={() => { carouselPaused.current = false; }}>
+    {mode === "carousel" && visible.length > 1 && <nav className="carousel-toolbar" aria-label="Featured promises carousel"><span>{String(carouselIndex + 1).padStart(2,"0")} / {String(visible.length).padStart(2,"0")}</span><div><button type="button" disabled={carouselIndex === 0} onClick={() => moveCarousel(-1)} aria-label="Previous promise">← Previous</button><button type="button" disabled={carouselIndex === visible.length - 1} onClick={() => moveCarousel(1)} aria-label="Next promise">Next →</button></div></nav>}
+    <div ref={carouselRef} className={`website-promise-grid ${mode === "carousel" ? "carousel-grid" : ""}`}>
       <div className={mode === "carousel" ? "carousel-track" : "website-grid-track"}>
-      {loopItems.map((item,index) => { const stage = promiseStage(item); const hasProof = hasAcceptedProof(item); const displayIndex = mode === "carousel" ? index % Math.max(visible.length, 1) : (activePage - 1) * pageSize + index; const decorativeCopy = mode === "carousel" && Math.floor(index / visible.length) !== 1; return <article className="website-promise-card" aria-hidden={decorativeCopy || undefined} key={`${item.id}-${index}`}>
+      {visible.map((item,index) => { const stage = promiseStage(item); const hasProof = hasAcceptedProof(item); const displayIndex = mode === "carousel" ? index : (activePage - 1) * pageSize + index; return <article className="website-promise-card" data-carousel-index={mode === "carousel" ? index : undefined} key={item.id}>
         <div className="website-card-head"><span className="mobile-card-number">{String(displayIndex + 1).padStart(2,"0")}</span><span className={`status ${item.status === "broken" ? "late" : item.status === "fulfilled" ? "done" : "progress"}`}><i />{publicStatusLabel(item.status)}</span></div>
         <p className="mobile-card-location">{item.state} · {item.district} · {item.category}</p>
         <h2>{item.title}</h2><p className="website-card-summary">{item.detail}</p>
         <div className="mobile-card-authority"><span>RESPONSIBLE OFFICE</span><strong>{item.accountableOffice}</strong></div>
         <dl className={`mobile-card-dates ${item.deadlineStart ? "has-window" : ""}`}><div><dt>Promised</dt><dd>{formatPublicDate(item.promisedOn)}</dd></div>{item.deadlineStart && <div><dt>Window starts</dt><dd>{formatPublicDate(item.deadlineStart)}</dd></div>}<div><dt>{item.deadlineStart ? "Window ends" : "Deadline"}</dt><dd>{formatPublicDate(item.deadline)}</dd></div></dl>{item.deadlineLabel && <p className="deadline-window-label">Stated timeframe · {item.deadlineLabel}</p>}
         <div className="website-stage-wrap"><div className="mobile-stage-copy"><span>PROMISE STAGE</span><strong>{promiseStages[stage]}</strong></div><ol className="mobile-stages">{promiseStages.map((label,stageIndex)=><li className={stageIndex<=stage?"reached":""} key={label}><i/><span>{label}</span></li>)}</ol></div>
-        <div className="mobile-card-actions"><Link tabIndex={decorativeCopy ? -1 : undefined} className="mobile-record-button" href={`/promises/${item.slug}`}>View record <span>↗</span></Link>{item.status === "fulfilled" && hasProof ? <Link tabIndex={decorativeCopy ? -1 : undefined} className="mobile-proof-button complete" href={`/promises/${item.slug}#completion-proof`}>View proof <span>✓</span></Link> : <Link tabIndex={decorativeCopy ? -1 : undefined} className="mobile-proof-button" href={`/submit?mode=proof&promise=${item.slug}`}>Submit proof <span>＋</span></Link>}</div>
+        <div className="mobile-card-actions"><Link className="mobile-record-button" href={`/promises/${item.slug}`}>View record <span>↗</span></Link>{item.status === "fulfilled" && hasProof ? <Link className="mobile-proof-button complete" href={`/promises/${item.slug}#completion-proof`}>View proof <span>✓</span></Link> : <Link className="mobile-proof-button" href={`/submit?mode=proof&promise=${item.slug}`}>Submit proof <span>＋</span></Link>}</div>
         <div className="mobile-card-progress"><div><span>VERIFIED PROGRESS</span><strong>{item.progress}%</strong></div><div className="progress-track"><span style={{width:`${item.progress}%`}}/></div><small>Reviewed {formatPublicDate(item.lastReviewedAt)}</small></div>
       </article>; })}
-      {!visible.length && <div className="mobile-no-results"><strong>No promises match.</strong><p>Change one of the three filters.</p><button type="button" onClick={()=>{setState("All states");setDistrict("All districts");setSector("All sectors");setStatus("All status");setPage(1);}}>Reset filters</button></div>}
+      {!visible.length && <div className="mobile-no-results"><strong>No promises match.</strong><p>Change one of the three filters.</p><button type="button" onClick={()=>{setState("All states");setDistrict("All districts");setSector("All sectors");setStatus("All status");setPage(1);resetCarousel();}}>Reset filters</button></div>}
       </div>
     </div>
     {mode === "grid" && filtered.length > pageSize && <nav className="promise-pagination" aria-label="Promise pages"><button type="button" disabled={activePage === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>← Previous</button><div>{Array.from({ length: pageCount }, (_, index) => index + 1).map((number) => <button type="button" className={number === activePage ? "active" : ""} aria-current={number === activePage ? "page" : undefined} onClick={() => setPage(number)} key={number}>{number}</button>)}</div><button type="button" disabled={activePage === pageCount} onClick={() => setPage((value) => Math.min(pageCount, value + 1))}>Next →</button></nav>}
-    {sheet && <div className="website-filter-layer" role="presentation" onMouseDown={(event)=>{if(event.target===event.currentTarget)setSheet(null);}}><section className="website-filter-sheet" role="dialog" aria-modal="true" aria-label={sheet === "state" ? "Choose a state or district" : data?.title}><div className="mobile-sheet-head"><div><span>FILTER REGISTER</span><h2>{sheet === "state" ? "Choose a state or district" : data?.title}</h2></div><button type="button" onClick={()=>setSheet(null)} aria-label="Close">×</button></div>{sheet === "state" ? <div className="website-location-options"><div><span>STATE</span><div className="website-filter-options">{states.map((value)=><button className={state===value?"selected":""} type="button" key={value} onClick={()=>{setState(value);setDistrict("All districts");setPage(1);}}><span>{value}</span><i>{state===value?"✓":""}</i></button>)}</div></div><div><span>DISTRICT</span><div className="website-filter-options">{districts.map((value)=><button className={district===value?"selected":""} type="button" key={value} onClick={()=>{setDistrict(value);setPage(1);setSheet(null);}}><span>{value}</span><i>{district===value?"✓":""}</i></button>)}</div></div></div> : data ? <div className="website-filter-options">{data.values.map((value)=><button className={data.active===value?"selected":""} type="button" key={value} onClick={()=>{data.set(value);setPage(1);setSheet(null);}}><span>{value}</span><i>{data.active===value?"✓":""}</i></button>)}</div> : null}</section></div>}
+    {sheet && <div className="website-filter-layer" role="presentation" onMouseDown={(event)=>{if(event.target===event.currentTarget)setSheet(null);}}><section className="website-filter-sheet" role="dialog" aria-modal="true" aria-label={sheet === "state" ? "Choose a state or district" : data?.title}><div className="mobile-sheet-head"><div><span>FILTER REGISTER</span><h2>{sheet === "state" ? "Choose a state or district" : data?.title}</h2></div><button type="button" onClick={()=>setSheet(null)} aria-label="Close">×</button></div>{sheet === "state" ? <div className="website-location-options"><div><span>STATE</span><div className="website-filter-options">{states.map((value)=><button className={state===value?"selected":""} type="button" key={value} onClick={()=>{setState(value);setDistrict("All districts");setPage(1);resetCarousel();}}><span>{value}</span><i>{state===value?"✓":""}</i></button>)}</div></div><div><span>DISTRICT</span><div className="website-filter-options">{districts.map((value)=><button className={district===value?"selected":""} type="button" key={value} onClick={()=>{setDistrict(value);setPage(1);resetCarousel();setSheet(null);}}><span>{value}</span><i>{district===value?"✓":""}</i></button>)}</div></div></div> : data ? <div className="website-filter-options">{data.values.map((value)=><button className={data.active===value?"selected":""} type="button" key={value} onClick={()=>{data.set(value);setPage(1);resetCarousel();setSheet(null);}}><span>{value}</span><i>{data.active===value?"✓":""}</i></button>)}</div> : null}</section></div>}
   </div>;
 }

@@ -22,7 +22,7 @@ export function SiteHeader() {
     <>
     <div className="site-top-actions">
       <div className="site-top-left">
-        <div className="site-brand-row"><VaadaLogo className="site-corner-logo" tagline /><LiveVisitors /></div>
+        <div className="site-brand-row"><VaadaLogo className="site-corner-logo" tagline tone="light" /><LiveVisitors /></div>
         {pathname !== "/" && <BackButton className="route-back-control" />}
       </div>
       <div className="site-top-right"><a className="site-app-launch" href={mobileAppUrl}><span aria-hidden="true">▣</span> Launch app</a></div>

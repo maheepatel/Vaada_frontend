@@ -1,8 +1,10 @@
 import Link from "next/link";
 
-export function VaadaLogo({ href = "/", className = "", tagline = false }: { href?: string; className?: string; tagline?: boolean }) {
+type LogoTone = "light" | "dark";
+
+export function VaadaLogo({ href = "/", className = "", tagline = false, tone = "light" }: { href?: string; className?: string; tagline?: boolean; tone?: LogoTone }) {
   return (
-    <Link className={`vaada-logo ${className}`.trim()} href={href} aria-label="Vaada home">
+    <Link className={`vaada-logo vaada-logo--${tone} ${className}`.trim()} href={href} aria-label="Vaada home">
       <svg className="vaada-logo-mark" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M22 19.2727C22 20.779 20.779 22 19.2727 22H14.7273C13.221 22 12 20.779 12 19.2727V12H19.2727C20.779 12 22 13.221 22 14.7273V19.2727Z" className="logo-coral" />
         <path d="M20 2C21.1046 2 22 2.89543 22 4V7C22 8.10457 21.1046 9 20 9H17C15.8954 9 15 8.10457 15 7V4C15 2.89543 15.8954 2 17 2H20Z" className="logo-ink" />

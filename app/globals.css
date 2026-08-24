@@ -1197,13 +1197,10 @@ footer { padding-top:58px; }
 .website-grid-track { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .website-promise-grid { display:block; }
 .website-promise-grid.carousel-grid { display:block; overflow:hidden; padding:0; }
-.carousel-track { --loop-gap-half:9px; display:grid; grid-auto-flow:column; grid-auto-columns:min(620px,calc((100vw - 120px)/2)); width:max-content; gap:18px; will-change:transform; }
-.carousel-track.is-playing { animation:carousel-loop var(--carousel-duration,108s) linear infinite; }
-.carousel-track.is-paused,.carousel-track:hover,.carousel-track:focus-within { animation-play-state:paused; }
+.carousel-track { display:grid; grid-auto-flow:column; grid-auto-columns:min(620px,calc((100vw - 120px)/2)); width:max-content; gap:18px; }
 .carousel-grid .website-promise-card { scroll-snap-align:none; scroll-snap-stop:normal; }
 .carousel-toolbar button:first-child { min-width:76px; }
-@keyframes carousel-loop { to { transform:translateX(calc(-50% - var(--loop-gap-half))); } }
-@media (prefers-reduced-motion:reduce) { .carousel-track { transform:none!important; animation:none!important; } .website-promise-grid.carousel-grid { overflow-x:auto; } }
+@media (prefers-reduced-motion:reduce) { .website-promise-grid.carousel-grid { scroll-behavior:auto; } }
 
 .ranking-place-link { display:inline-block; color:inherit; }
 .ranking-place-link:hover { color:var(--coral); }
@@ -1402,4 +1399,64 @@ footer {
   .ranking-method { margin-inline: 12px; padding: 22px 18px; }
   footer { padding-top: 40px; padding-bottom: 82px; }
   .footer-number { margin-top: 28px; font-size: 25vw; }
+}
+
+/* Stable brand contrast and a deliberately manual, accessible carousel. */
+.vaada-logo {
+  --logo-contrast: var(--paper);
+  --logo-copy: var(--paper);
+  --logo-tagline: var(--paper-soft);
+  color: var(--logo-copy);
+}
+.vaada-logo--dark {
+  --logo-contrast: var(--ink);
+  --logo-copy: var(--ink);
+  --logo-tagline: #675e52;
+}
+.vaada-logo-mark .logo-ink { fill: var(--logo-contrast); }
+.vaada-logo-mark .logo-coral { fill: var(--coral); }
+.vaada-logo-copy { color: var(--logo-copy); }
+.vaada-logo-copy small { color: var(--logo-tagline); }
+.site-corner-logo {
+  padding: 6px 11px 6px 6px;
+  border: 0;
+  border-radius: 15px;
+  background: rgba(15,15,15,.84);
+  box-shadow: 0 8px 26px rgba(0,0,0,.16);
+  backdrop-filter: blur(14px);
+}
+
+.website-promise-grid.carousel-grid {
+  overflow-x: auto !important;
+  scroll-snap-type: x mandatory;
+  cursor: auto;
+  touch-action: pan-x pan-y;
+}
+.website-promise-grid.carousel-grid:active { cursor: auto; }
+.carousel-grid .website-promise-card {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal;
+  user-select: text;
+}
+.carousel-toolbar button:focus-visible,
+.carousel-toolbar button:hover {
+  border-color: var(--coral);
+  color: var(--coral);
+}
+.carousel-toolbar button:disabled,
+.carousel-toolbar button:disabled:hover {
+  border-color: var(--line);
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: .45;
+}
+.mobile-card-actions { position: relative; z-index: 3; }
+.mobile-card-actions a { pointer-events: auto; }
+
+@media (max-width:700px) {
+  .site-corner-logo { padding: 5px 8px 5px 5px; }
+  .carousel-toolbar { align-items: center; gap: 12px; }
+  .carousel-toolbar > span { max-width: none; white-space: nowrap; }
+  .carousel-toolbar button { min-width: 42px; padding-inline: 10px; }
+  .carousel-toolbar button:first-child { min-width: 42px; }
 }
