@@ -10,9 +10,9 @@ import { evidenceHref, isImageEvidence } from "@/lib/evidence-links";
 
 type Sheet = "state" | "sector" | "status" | null;
 
-export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: Commitment[]; compact?: boolean; mode?: "grid" | "carousel" }) {
-  const [state, setState] = useState("All states");
-  const [district, setDistrict] = useState("All districts");
+export function PromiseExplorer({ commitments, mode = "grid", initialState = "All states", initialDistrict = "All districts" }: { commitments: Commitment[]; compact?: boolean; mode?: "grid" | "carousel"; initialState?: string; initialDistrict?: string }) {
+  const [state, setState] = useState(initialState);
+  const [district, setDistrict] = useState(initialDistrict);
   const [sector, setSector] = useState("All sectors");
   const [status, setStatus] = useState("All status");
   const [sheet, setSheet] = useState<Sheet>(null);

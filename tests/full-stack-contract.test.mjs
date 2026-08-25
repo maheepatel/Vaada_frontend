@@ -39,3 +39,27 @@ test("no server-only secret is referenced by browser code", async () => {
   const paths = ["app/submit/page.tsx", "app/login/page.tsx", "lib/supabase/client.ts", "lib/repository.ts"];
   for (const path of paths) assert.doesNotMatch(await read(path), /SERVICE_ROLE|OPENAI_API_KEY|CRON_SECRET/);
 });
+
+test("route changes reset scroll position instead of restoring the previous footer position", async () => {
+  const source = await read("components/smooth-scroll.tsx");
+  assert.match(source, /usePathname/);
+  assert.match(source, /scrollRestoration = "manual"/);
+  assert.match(source, /window\.scrollTo\(\{ top: 0/);
+});
+
+test("state pages initialize both visible location filters from the route", async () => {
+  const page = await read("app/states/[state]/page.tsx");
+  const explorer = await read("components/promise-explorer.tsx");
+  assert.match(page, /initialState=\{stateName\}/);
+  assert.match(page, /initialDistrict=\{districtName \?\? onlyDistrict\}/);
+  assert.match(explorer, /useState\(initialState\)/);
+  assert.match(explorer, /useState\(initialDistrict\)/);
+});
+
+test("homepage statistics use the shared page gutter and a centered inner grid", async () => {
+  const home = await read("components/home-experience.tsx");
+  const css = await read("app/globals.css");
+  assert.match(home, /className="stats-shell"/);
+  assert.match(css, /\.stats-shell \{ padding-inline:var\(--page-gutter\)/);
+  assert.match(css, /\.stats-shell \.stats \{ width:100%; max-width:1320px; margin-inline:auto/);
+});
