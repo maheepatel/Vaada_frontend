@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { publicStatusLabel } from "@/lib/status";
 import type { Commitment } from "@/lib/types";
 import { formatPublicDate, hasAcceptedProof, promiseStage, promiseStages } from "@/lib/promise-view";
+import { evidenceHref, isImageEvidence } from "@/lib/evidence-links";
 
 type Sheet = "state" | "sector" | "status" | null;
 
@@ -52,8 +54,9 @@ export function PromiseExplorer({ commitments, mode = "grid" }: { commitments: C
     {mode === "carousel" && visible.length > 1 && <nav className="carousel-toolbar" aria-label="Featured promises carousel"><span>{String(carouselIndex + 1).padStart(2,"0")} / {String(visible.length).padStart(2,"0")}</span><div><button type="button" disabled={carouselIndex === 0} onClick={() => moveCarousel(-1)} aria-label="Previous promise">← Previous</button><button type="button" disabled={carouselIndex === visible.length - 1} onClick={() => moveCarousel(1)} aria-label="Next promise">Next →</button></div></nav>}
     <div ref={carouselRef} className={`website-promise-grid ${mode === "carousel" ? "carousel-grid" : ""}`}>
       <div className={mode === "carousel" ? "carousel-track" : "website-grid-track"}>
-      {visible.map((item,index) => { const stage = promiseStage(item); const hasProof = hasAcceptedProof(item); const displayIndex = mode === "carousel" ? index : (activePage - 1) * pageSize + index; return <article className="website-promise-card" data-carousel-index={mode === "carousel" ? index : undefined} key={item.id}>
+      {visible.map((item,index) => { const stage = promiseStage(item); const hasProof = hasAcceptedProof(item); const proofImage = item.evidence.find((entry) => entry.kind === "proof" && entry.verdict === "verified" && isImageEvidence(entry)); const displayIndex = mode === "carousel" ? index : (activePage - 1) * pageSize + index; return <article className="website-promise-card" data-carousel-index={mode === "carousel" ? index : undefined} key={item.id}>
         <div className="website-card-head"><span className="mobile-card-number">{String(displayIndex + 1).padStart(2,"0")}</span><span className={`status ${item.status === "broken" ? "late" : item.status === "fulfilled" ? "done" : "progress"}`}><i />{publicStatusLabel(item.status)}</span></div>
+        {item.status === "fulfilled" && proofImage && <Link className="completed-proof-cover" href={`/promises/${item.slug}#completion-proof`} aria-label={`View verified proof for ${item.title}`}><Image src={evidenceHref(proofImage)} alt={`Verified completion proof for ${item.title}`} width={900} height={560} unoptimized /><span>VERIFIED COMPLETION PROOF</span></Link>}
         <p className="mobile-card-location">{item.state} · {item.district} · {item.category}</p>
         <h2>{item.title}</h2><p className="website-card-summary">{item.detail}</p>
         <div className="mobile-card-authority"><span>RESPONSIBLE OFFICE</span><strong>{item.accountableOffice}</strong></div>

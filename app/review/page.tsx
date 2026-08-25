@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
 import { getBrowserSupabase } from "@/lib/supabase/client";
@@ -9,14 +10,15 @@ import { backendEndpoint } from "@/lib/external-services";
 type QueueItem = { id:string; submission_kind:"promise"|"proof"; title:string; promise_text:string; source_url:string|null; proof_path:string|null; proof_url:string|null; proof_mime_type:string|null; state:string; district:string|null; category:string; accountable_office:string|null; ai_warnings:string[]; created_at:string; target_commitment?:{id:string;slug:string;title:string;status:string;progress:number}|null };
 
 export default function ReviewPage() {
+  const router=useRouter();
   const [items,setItems]=useState<QueueItem[]>([]);
   const [notes,setNotes]=useState<Record<string,string>>({});
   const [progress,setProgress]=useState<Record<string,number>>({});
   const [complete,setComplete]=useState<Record<string,boolean>>({});
   const [loading,setLoading]=useState(true);
 
-  const load=async()=>{const supabase=getBrowserSupabase();const{data:{session}}=await supabase?.auth.getSession()??{data:{session:null}};if(!session){setLoading(false);return;}const promise=new URLSearchParams(window.location.search).get("promise");const endpoint=backendEndpoint(`/v1/review/submissions${promise?`?promise=${encodeURIComponent(promise)}`:""}`);if(!endpoint){toast.error("The Vaada backend URL is not configured.");setLoading(false);return;}const response=await fetch(endpoint,{headers:{authorization:`Bearer ${session.access_token}`}});const body=await response.json();if(response.ok){const queued=body.submissions??[];setItems(queued);setProgress(Object.fromEntries(queued.filter((item:QueueItem)=>item.submission_kind==="proof").map((item:QueueItem)=>[item.id,item.target_commitment?.progress??0])));}else toast.error(body.error);setLoading(false);};
-  useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer);},[]);
+  const load=useCallback(async()=>{const supabase=getBrowserSupabase();const{data:{session}}=await supabase?.auth.getSession()??{data:{session:null}};if(!session){router.replace("/login?next=/review");return;}const promise=new URLSearchParams(window.location.search).get("promise");const endpoint=backendEndpoint(`/v1/review/submissions${promise?`?promise=${encodeURIComponent(promise)}`:""}`);if(!endpoint){toast.error("The Vaada backend URL is not configured.");setLoading(false);return;}const response=await fetch(endpoint,{headers:{authorization:`Bearer ${session.access_token}`}});const body=await response.json();if(response.ok){const queued=body.submissions??[];setItems(queued);setProgress(Object.fromEntries(queued.filter((item:QueueItem)=>item.submission_kind==="proof").map((item:QueueItem)=>[item.id,item.target_commitment?.progress??0])));}else toast.error(body.error);setLoading(false);},[router]);
+  useEffect(()=>{const timer=window.setTimeout(()=>void load(),0);return()=>window.clearTimeout(timer);},[load]);
 
   const decide=async(item:QueueItem,decision:"accepted"|"rejected"|"needs_info")=>{const supabase=getBrowserSupabase();const{data:{session}}=await supabase?.auth.getSession()??{data:{session:null}};if(!session)return;const endpoint=backendEndpoint("/v1/review/submissions");if(!endpoint)return toast.error("The Vaada backend URL is not configured.");const response=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${session.access_token}`},body:JSON.stringify({submissionId:item.id,decision,note:notes[item.id]??"Reviewed against the original source.",progressAfter:item.submission_kind==="proof"?progress[item.id]:undefined,markCompleted:item.submission_kind==="proof"?complete[item.id]??false:false})});const body=await response.json();if(!response.ok)return toast.error(body.error);toast.success(item.submission_kind==="proof"&&decision==="accepted"?"Proof accepted and the public record was updated.":`Submission ${decision.replace("_"," ")}.`);setItems(old=>old.filter(entry=>entry.id!==item.id));};
 

@@ -1064,6 +1064,18 @@ footer { padding-bottom:130px; }
   footer { padding-bottom:115px; }
 }
 
+.completed-proof-cover { position:relative; display:block; aspect-ratio:16/9; margin:18px 0 24px; overflow:hidden; border:1px solid var(--line); background:#171717; }
+.completed-proof-cover img { width:100%; height:100%; object-fit:cover; transition:transform 240ms ease; }
+.completed-proof-cover:hover img { transform:scale(1.02); }
+.completed-proof-cover span { position:absolute; left:12px; bottom:12px; padding:7px 9px; background:rgba(15,15,15,.88); color:var(--paper); font:700 8px "IBM Plex Mono",monospace; letter-spacing:.06em; }
+.evidence-preview { display:block; width:100%; height:auto; max-height:620px; margin:20px 0; border:1px solid var(--line); object-fit:contain; background:#121212; }
+.promise-letter-preview { background:var(--paper); }
+.auth-mode { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin:24px 0; }
+.auth-mode button { min-height:42px; border:1px solid var(--line); background:transparent; color:var(--muted); font:700 9px "IBM Plex Mono",monospace; text-transform:uppercase; cursor:pointer; }
+.auth-mode button.active { border-color:var(--coral); background:var(--coral); color:var(--ink); }
+.reviewer-login-link { display:inline-block; margin-top:20px; color:var(--muted); font:9px "IBM Plex Mono",monospace; text-transform:uppercase; }
+.account-actions { display:flex; flex-wrap:wrap; gap:12px; margin-top:32px; }
+
 /* Interaction refinement: swipe-first app, compact responsive controls and denser storytelling. */
 .website-promise-grid.carousel-grid { overflow-x:auto; overflow-y:hidden; overscroll-behavior-inline:contain; scrollbar-width:none; cursor:grab; }
 .website-promise-grid.carousel-grid:active { cursor:grabbing; }
