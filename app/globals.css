@@ -168,7 +168,9 @@ footer { padding: 78px max(48px, calc((100vw - 1220px) / 2)) 28px; background: v
 .blue-hero { color: var(--ink); }.blue-hero .eyebrow,.blue-hero > p:last-child { color: rgba(31,42,44,.72); }
 
 .record-hero { padding: 170px max(48px,calc((100vw - 1220px)/2)) 72px; background: var(--paper); color: var(--ink); }
-.record-kicker { display: grid; grid-template-columns: 1fr auto auto; gap: 30px; padding-bottom: 22px; border-bottom: 1px solid rgba(31,42,44,.24); font: 10px "IBM Plex Mono",monospace; text-transform: uppercase; }
+.record-kicker { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding-bottom: 22px; border-bottom: 1px solid rgba(31,42,44,.24); font: 12px "IBM Plex Mono",monospace; text-transform: uppercase; }
+.record-location { font-size: clamp(12px,1vw,15px); font-weight: 700; letter-spacing: .04em; }
+.record-kicker .status { font-size: clamp(11px,.9vw,13px); font-weight: 700; }
 .record-kicker .status { color: var(--ink); }
 .prototype-label { margin: 24px 0 0 !important; color: var(--blue) !important; font: 9px "IBM Plex Mono",monospace !important; letter-spacing: .08em; }
 .record-hero h1 { max-width: 1100px; font-size: clamp(54px,7.4vw,108px); }
@@ -1459,4 +1461,22 @@ footer {
   .carousel-toolbar > span { max-width: none; white-space: nowrap; }
   .carousel-toolbar button { min-width: 42px; padding-inline: 10px; }
   .carousel-toolbar button:first-child { min-width: 42px; }
+}
+
+/* Route contrast contract. These rules stay last so broad route styles cannot
+   make state headings unreadable on the paper background. */
+.route-hero.paper-hero {
+  min-height: 58svh;
+  padding-top: 180px;
+  background: radial-gradient(circle at 78% 12%,rgba(255,103,92,.12),transparent 34%),var(--paper);
+  color: var(--ink);
+}
+.route-hero.paper-hero .eyebrow,
+.route-hero.paper-hero > p:last-child { color: #526662; }
+.record-hero { padding-top: 180px; }
+
+@media (max-width:700px) {
+  .route-hero.paper-hero,
+  .record-hero { padding-top: 142px; }
+  .record-kicker { align-items: flex-start; gap: 15px; }
 }
