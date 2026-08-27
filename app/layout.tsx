@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { ScrollProgress } from "@/components/scroll-progress";
 import { SmoothScroll } from "@/components/smooth-scroll";
 import { AccountabilityBackdrop } from "@/components/accountability-backdrop";
+import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,5 +22,5 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><SmoothScroll /><ScrollProgress /><AccountabilityBackdrop />{children}<Toaster position="bottom-center" richColors /></body></html>;
+  return <html lang="en"><body><AuthProvider><SmoothScroll /><ScrollProgress /><AccountabilityBackdrop />{children}<Toaster position="bottom-center" richColors /></AuthProvider></body></html>;
 }

@@ -1326,6 +1326,29 @@ footer { padding-top:58px; }
   background: rgba(15,15,15,.86);
 }
 
+/* Secure account controls reuse the existing Vaada spacing, type and colour tokens. */
+.google-auth-button { width:100%; min-height:56px; display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:14px; margin-top:28px; padding:0 18px; border:1px solid rgba(23,23,23,.26); background:#fff; color:var(--ink); font:700 11px "IBM Plex Mono",monospace; text-transform:uppercase; cursor:pointer; }
+.google-auth-button span { display:grid; width:30px; height:30px; place-items:center; border:1px solid rgba(23,23,23,.18); border-radius:50%; color:#4285f4; font-family:Arial,sans-serif; font-size:16px; }
+.google-auth-button i { color:var(--coral); font-style:normal; }
+.google-auth-button:disabled { opacity:.55; cursor:not-allowed; }
+.auth-divider { display:flex; align-items:center; gap:14px; margin:24px 0 0; color:#687874; font:8px "IBM Plex Mono",monospace; letter-spacing:.08em; }
+.auth-divider::before,.auth-divider::after { content:""; flex:1; height:1px; background:rgba(23,23,23,.18); }
+.auth-privacy-note { margin-top:24px!important; padding-top:18px; border-top:1px solid rgba(23,23,23,.18); font-size:12px; }
+.auth-gate-state { min-height:70svh; display:grid; place-items:center; padding:150px var(--page-gutter) 100px; background:var(--ink-deep); color:var(--paper-soft); font:10px "IBM Plex Mono",monospace; text-transform:uppercase; }
+.secure-account-page { min-height:100svh; padding:150px var(--page-gutter) 120px; background:var(--ink-deep); color:var(--paper); }
+.secure-account-page h1 { max-width:900px; margin:26px 0; font-size:clamp(58px,8vw,118px); line-height:.88; letter-spacing:-.068em; font-weight:520; }
+.account-identity { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); max-width:760px; margin:58px 0 0; border-top:1px solid var(--line); border-left:1px solid var(--line); }
+.account-identity div { min-height:130px; display:flex; flex-direction:column; justify-content:space-between; padding:22px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
+.account-identity dt { color:var(--muted); font:9px "IBM Plex Mono",monospace; text-transform:uppercase; }
+.account-identity dd { margin:0; font-size:20px; text-transform:capitalize; }
+
+@media (max-width:600px) {
+  .site-app-launch { min-height:42px; padding:0 12px; font-size:8px; }
+  .site-app-launch span { display:none; }
+  .account-identity { grid-template-columns:1fr; }
+  .secure-account-page { padding-top:125px; }
+}
+
 .hero,
 .route-hero,
 .record-hero,

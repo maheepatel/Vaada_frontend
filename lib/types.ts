@@ -25,7 +25,7 @@ export interface EvidenceItem {
   title: string;
   sourceKind: "signed_document" | "media" | "press_link" | "document_link" | "link_only";
   sourceUrl: string;
-  storagePath?: string;
+  hasMedia?: boolean;
   mediaType?: string;
   quote?: string;
   direction?: "supports" | "refutes";
@@ -89,7 +89,10 @@ export interface SubmissionPayload extends ExtractedDraft {
   submitterName?: string;
   submitterEmail?: string;
   submitAnonymously: boolean;
-  proofPath?: string;
+  mediaAssetId?: string;
   proofMimeType?: string;
+  proofSha256?: string;
+  proofSizeBytes?: number;
+  proofOriginalName?: string;
   rawText?: string;
 }

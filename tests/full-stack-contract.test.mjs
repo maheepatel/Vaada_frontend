@@ -10,10 +10,14 @@ test("website reads public records from the standalone backend", async () => {
   assert.match(source, /v1\/promises\/\$\{encodeURIComponent\(slug\)\}/);
 });
 
-test("submission flow authenticates, uploads media and sends the complete deadline contract", async () => {
+test("submission flow requires an account, uploads owned media and sends the complete deadline contract", async () => {
   const source = await read("app/submit/page.tsx");
-  assert.match(source, /signInAnonymously/);
+  assert.doesNotMatch(source, /signInAnonymously/);
+  assert.match(source, /<AuthGuard>/);
   assert.match(source, /\/v1\/uploads\/proof/);
+  assert.match(source, /mediaAssetId/);
+  assert.match(source, /completion_proof/);
+  assert.match(source, /promise_source/);
   assert.match(source, /\/v1\/submissions/);
   assert.match(source, /deadlineStart/);
   assert.match(source, /deadlineEnd/);
@@ -28,11 +32,33 @@ test("accepted images appear as original letters, detailed proof and completed-c
   assert.match(explorer, /VERIFIED COMPLETION PROOF/);
 });
 
-test("account UI supports password login, signup and secure email links", async () => {
+test("account UI supports Google, password, signup and secure email links", async () => {
   const source = await read("app/login/page.tsx");
+  assert.match(source, /signInWithOAuth/);
+  assert.match(source, /provider: "google"/);
   assert.match(source, /signInWithPassword/);
   assert.match(source, /signUp/);
   assert.match(source, /signInWithOtp/);
+});
+
+test("private pages and write actions share one authentication policy", async () => {
+  const provider = await read("components/auth-provider.tsx");
+  const guard = await read("components/protected-action.tsx");
+  const records = await read("app/my-logs/page.tsx");
+  const review = await read("app/review/page.tsx");
+  const header = await read("components/site-header.tsx");
+  assert.match(provider, /!user\.is_anonymous/);
+  assert.match(guard, /Please log in or create an account/);
+  assert.match(records, /<AuthGuard>/);
+  assert.match(review, /roles=\{\["reviewer","admin"\]\}/);
+  assert.match(header, /Login \/ Sign up/);
+});
+
+test("homepage moves Launch App into the hero and protects record creation", async () => {
+  const source = await read("components/home-experience.tsx");
+  assert.match(source, /href=\{mobileAppUrl\}>Launch app/);
+  assert.match(source, /ProtectedActionLink className="button button-ghost hero-record"/);
+  assert.doesNotMatch(source, />Explore promises/);
 });
 
 test("no server-only secret is referenced by browser code", async () => {

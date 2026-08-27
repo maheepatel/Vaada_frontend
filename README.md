@@ -19,6 +19,8 @@ Configure:
 
 The website keeps a bundled read-only seed register for graceful fallback. Submission, extraction, proof upload, review and production data access go through `vaada-backend`.
 
+Public browsing remains open. Google or verified email authentication is required for `/submit`, `/my-logs`, uploads and AI extraction. `/review` additionally requires a `reviewer` or `admin` profile role. “Submit anonymously” controls public attribution only; the private account ID remains attached for ownership, abuse prevention and audit history.
+
 Never add the Supabase service role key, AI provider secrets or backend credentials to this frontend repository. Only browser-safe `NEXT_PUBLIC_` values belong in Vercel's frontend environment settings.
 
 ## Deploy on Vercel
