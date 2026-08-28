@@ -27,11 +27,11 @@ export function ProtectedActionLink({ href, children, className, hideWhenSignedO
     }
     if (!configured) {
       event.preventDefault();
-      return toast.error("Login is not connected yet. Add the Supabase environment variables first.");
+      return toast.error("Sign-in is temporarily unavailable. Please try again later.");
     }
     if (!signedIn) {
       event.preventDefault();
-      toast.info("Please log in or create an account to continue.");
+      toast.info("Please log in to continue.");
       router.push(loginHref(href));
       return;
     }
@@ -55,7 +55,7 @@ export function AuthGuard({ children, roles }: { children: ReactNode; roles?: Ap
     if (loading || notified.current) return;
     if (!configured || !signedIn) {
       notified.current = true;
-      toast.info("Please log in or create an account to access this page.");
+      toast.info("Please log in to access this page.");
       const current = typeof window === "undefined" ? pathname : `${window.location.pathname}${window.location.search}`;
       router.replace(loginHref(current));
     } else if (!allowed) {
@@ -65,7 +65,7 @@ export function AuthGuard({ children, roles }: { children: ReactNode; roles?: Ap
     }
   }, [allowed, configured, loading, pathname, router, signedIn]);
 
-  if (loading) return <div className="auth-gate-state" role="status">Checking your secure Vaada account…</div>;
-  if (!configured || !signedIn || !allowed) return <div className="auth-gate-state" role="status">Redirecting to secure login…</div>;
+  if (loading) return <div className="auth-gate-state" role="status">Checking your account…</div>;
+  if (!configured || !signedIn || !allowed) return <div className="auth-gate-state" role="status">Redirecting to login…</div>;
   return <>{children}</>;
 }

@@ -27,10 +27,10 @@ export function SiteHeader() {
         <div className="site-brand-row"><VaadaLogo className="site-corner-logo" tagline tone="light" /><LiveVisitors /></div>
         {pathname !== "/" && <BackButton className="route-back-control" />}
       </div>
-      <div className="site-top-right">{signedIn
+      {pathname !== "/login" && <div className="site-top-right">{signedIn
         ? <Link className="site-app-launch" href="/account"><span aria-hidden="true">●</span> Account</Link>
-        : <Link className="site-app-launch" href="/login"><span aria-hidden="true">○</span> {loading ? "Checking…" : "Login / Sign up"}</Link>}
-      </div>
+        : <Link className="site-app-launch" href="/login"><span aria-hidden="true">○</span> {loading ? "Checking…" : "Log in"}</Link>}
+      </div>}
     </div>
     <header className="floating-dock site-dock">
       <nav className="dock-links" aria-label="Primary navigation">

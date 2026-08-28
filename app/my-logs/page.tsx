@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import { AuthGuard, ProtectedActionLink } from "@/components/protected-action";
 import { useAuth } from "@/components/auth-provider";
 import { backendEndpoint } from "@/lib/external-services";
@@ -20,7 +21,7 @@ function PrivateRecords() {
     void (async () => {
       const endpoint = backendEndpoint("/v1/me/submissions");
       if (!endpoint) {
-        toast.error("The Vaada backend URL is not configured.");
+        toast.error("Your records are temporarily unavailable. Please try again later.");
         return setLoading(false);
       }
       try {
@@ -41,5 +42,5 @@ function PrivateRecords() {
 }
 
 export default function MyLogsPage() {
-  return <main className="site-shell route-shell"><SiteHeader/><AuthGuard><PrivateRecords/></AuthGuard></main>;
+  return <main className="site-shell route-shell"><SiteHeader/><AuthGuard><PrivateRecords/></AuthGuard><SiteFooter /></main>;
 }

@@ -19,5 +19,5 @@ export function LiveVisitors() {
     return () => { void channel.untrack(); void supabase.removeChannel(channel); };
   }, []);
 
-  return <span className="live-visitors" title={count === null ? "Real time count activates when Supabase Realtime is connected" : `${count} visitors viewing Vaada now`}><i aria-hidden="true" /><span>LIVE</span><strong>{count ?? "…"}</strong></span>;
+  return <span className="live-visitors" title={count === null ? "Live visitor count" : `${count} visitors viewing Vaada now`}><i aria-hidden="true" /><span>LIVE</span><strong>{count ?? "…"}</strong></span>;
 }

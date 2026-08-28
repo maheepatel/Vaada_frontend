@@ -32,6 +32,7 @@ export interface EvidenceItem {
   verdict: EvidenceVerdict;
   documentDate: string;
   reviewedAt?: string;
+  submittedBy?: string;
 }
 
 export interface TimelineEvent {

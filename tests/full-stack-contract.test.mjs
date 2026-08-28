@@ -32,13 +32,19 @@ test("accepted images appear as original letters, detailed proof and completed-c
   assert.match(explorer, /VERIFIED COMPLETION PROOF/);
 });
 
-test("account UI supports Google, password, signup and secure email links", async () => {
+test("account UI supports Google, password login, signup and password recovery", async () => {
   const source = await read("app/login/page.tsx");
+  const css = await read("app/globals.css");
   assert.match(source, /signInWithOAuth/);
   assert.match(source, /provider: "google"/);
   assert.match(source, /signInWithPassword/);
   assert.match(source, /signUp/);
-  assert.match(source, /signInWithOtp/);
+  assert.match(source, /resetPasswordForEmail/);
+  assert.match(source, /full_name: name\.trim\(\)/);
+  assert.doesNotMatch(source, /signInWithOtp|magic|secure link/i);
+  assert.doesNotMatch(source, /Authentication is waiting|environment variables|Supabase environment/i);
+  assert.match(css, /\.auth-submit,\s*\.auth-secondary \{\s*width: 100%/);
+  assert.match(css, /\.google-auth-button \{\s*width: 100%/);
 });
 
 test("private pages and write actions share one authentication policy", async () => {
@@ -48,10 +54,38 @@ test("private pages and write actions share one authentication policy", async ()
   const review = await read("app/review/page.tsx");
   const header = await read("components/site-header.tsx");
   assert.match(provider, /!user\.is_anonymous/);
-  assert.match(guard, /Please log in or create an account/);
+  assert.match(guard, /Please log in/);
   assert.match(records, /<AuthGuard>/);
   assert.match(review, /roles=\{\["reviewer","admin"\]\}/);
-  assert.match(header, /Login \/ Sign up/);
+  assert.match(header, /"Log in"/);
+});
+
+test("public attribution remains optional while every submission stays authenticated", async () => {
+  const source = await read("app/submit/page.tsx");
+  const types = await read("lib/types.ts");
+  const detail = await read("app/promises/[slug]/page.tsx");
+  assert.match(source, /Keep my name private/);
+  assert.match(source, /Credit this record to me/);
+  assert.match(source, /Your email is never published/);
+  assert.match(source, /submitAnonymously: !publiclyNamed/);
+  assert.match(types, /submittedBy\?: string/);
+  assert.match(detail, /Contributed by/);
+});
+
+test("evidence input validates supported media and renders an image or PDF preview", async () => {
+  const source = await read("components/evidence-upload.tsx");
+  const review = await read("app/review/page.tsx");
+  assert.match(source, /image\/jpeg/);
+  assert.match(source, /application\/pdf/);
+  assert.match(source, /10 \* 1024 \* 1024/);
+  assert.match(source, /URL\.createObjectURL/);
+  assert.match(source, /Preview of/);
+  assert.match(review, /review-image-preview/);
+});
+
+test("customer-facing pages never expose infrastructure setup instructions", async () => {
+  const paths = ["app/login/page.tsx", "app/submit/page.tsx", "app/review/page.tsx", "app/my-logs/page.tsx", "components/protected-action.tsx", "components/live-visitors.tsx"];
+  for (const path of paths) assert.doesNotMatch(await read(path), /environment variables|backend URL is not configured|Supabase environment|Connect backend to continue/i, path);
 });
 
 test("homepage moves Launch App into the hero and protects record creation", async () => {
@@ -71,6 +105,13 @@ test("route changes reset scroll position instead of restoring the previous foot
   assert.match(source, /usePathname/);
   assert.match(source, /scrollRestoration = "manual"/);
   assert.match(source, /window\.scrollTo\(\{ top: 0/);
+  assert.match(source, /scrollTo\(0, \{ immediate: true, force: true \}\)/);
+});
+
+test("the page shell ends with the footer instead of a transparent dock gap", async () => {
+  const css = await read("app/globals.css");
+  assert.match(css, /\.site-shell \{\s*min-height: 100svh;\s*display: flex;[\s\S]*?padding-bottom: 0;/);
+  assert.match(css, /\.site-shell > footer \{ width: 100%; margin-top: auto; \}/);
 });
 
 test("state pages initialize both visible location filters from the route", async () => {
