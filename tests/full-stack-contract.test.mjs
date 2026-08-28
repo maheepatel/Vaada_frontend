@@ -64,6 +64,8 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(css, /\.logo :global\(\.vaada-logo-mark\)/);
   assert.match(css, /width: 100%/);
   assert.match(layout, /<Toaster position="top-left"/);
+  const globalCss = await read("app/globals.css");
+  assert.doesNotMatch(globalCss, /login-page|auth-card|google-auth-button|auth-submit|auth-secondary|forgot-password|password-control|auth-divider|auth-privacy-note/);
 });
 
 test("private pages and write actions share one authentication policy", async () => {
@@ -96,12 +98,15 @@ test("public attribution remains optional while every submission stays authentic
 test("evidence input validates supported media and renders an image or PDF preview", async () => {
   const source = await read("components/evidence-upload.tsx");
   const review = await read("app/review/page.tsx");
+  const css = await read("app/globals.css");
   assert.match(source, /image\/jpeg/);
   assert.match(source, /application\/pdf/);
   assert.match(source, /10 \* 1024 \* 1024/);
   assert.match(source, /URL\.createObjectURL/);
   assert.match(source, /Preview of/);
   assert.match(review, /review-image-preview/);
+  assert.match(css, /\.evidence-file-button \{[\s\S]*?border-radius: 999px;/);
+  assert.match(css, /\.review-actions button \{[\s\S]*?border-radius: 999px;/);
 });
 
 test("customer-facing pages never expose infrastructure setup instructions", async () => {
