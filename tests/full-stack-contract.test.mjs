@@ -43,10 +43,14 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(source, /signUp/);
   assert.match(source, /resetPasswordForEmail/);
   assert.match(source, /full_name: name\.trim\(\)/);
+  assert.match(source, /useSearchParams/);
+  assert.doesNotMatch(source, /setMode\("recovery"\)/);
   assert.doesNotMatch(source, /signInWithOtp|magic|secure link/i);
   assert.doesNotMatch(source, /Authentication is waiting|environment variables|Supabase environment/i);
   assert.match(login, /initialMode="login"/);
   assert.match(signup, /initialMode="signup"/);
+  assert.match(login, /<Suspense fallback=\{null\}>/);
+  assert.match(signup, /<Suspense fallback=\{null\}>/);
   assert.match(css, /\.primaryButton \{/);
   assert.match(css, /\.googleButton \{/);
   assert.match(css, /width: 100%/);

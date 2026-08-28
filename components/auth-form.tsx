@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { getBrowserSupabase } from "@/lib/supabase/client";
@@ -38,7 +38,7 @@ function PasswordField({ label, value, onChange, autoComplete }: {
 }
 
 export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const [selectedMode, setSelectedMode] = useState<Mode>(initialMode);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,12 +46,9 @@ export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
   const [busy, setBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { loading, signedIn } = useAuth();
-
-  useEffect(() => {
-    const requestedMode = new URLSearchParams(window.location.search).get("mode");
-    if (requestedMode === "recovery") setMode("recovery");
-  }, []);
+  const mode: Mode = searchParams.get("mode") === "recovery" ? "recovery" : selectedMode;
 
   useEffect(() => {
     if (!loading && signedIn && mode !== "recovery") router.replace(destinationFromLocation());
@@ -65,13 +62,15 @@ export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
   }, [mode]);
 
   const chooseMode = (nextMode: Mode) => {
-    setMode(nextMode);
+    setSelectedMode(nextMode);
     setPassword("");
     setConfirmPassword("");
     setErrorMessage("");
     if (nextMode === "login" || nextMode === "signup") {
-      const params = window.location.search;
-      window.history.replaceState(null, "", `${nextMode === "signup" ? "/signup" : "/login"}${params}`);
+      const params = new URLSearchParams(window.location.search);
+      params.delete("mode");
+      const query = params.toString();
+      window.history.replaceState(null, "", `${nextMode === "signup" ? "/signup" : "/login"}${query ? `?${query}` : ""}`);
     }
   };
 
