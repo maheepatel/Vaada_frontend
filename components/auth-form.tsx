@@ -1,9 +1,11 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
+import { VaadaLogo } from "@/components/vaada-logo";
 import { getBrowserSupabase } from "@/lib/supabase/client";
 import styles from "./auth-form.module.css";
 
@@ -49,16 +51,18 @@ export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
   const searchParams = useSearchParams();
   const { loading, signedIn } = useAuth();
   const mode: Mode = searchParams.get("mode") === "recovery" ? "recovery" : selectedMode;
+  const nextQuery = searchParams.get("next");
+  const nextSuffix = nextQuery ? `?next=${encodeURIComponent(nextQuery)}` : "";
 
   useEffect(() => {
     if (!loading && signedIn && mode !== "recovery") router.replace(destinationFromLocation());
   }, [loading, mode, router, signedIn]);
 
   const title = useMemo(() => {
-    if (mode === "signup") return "Create your Vaada account";
+    if (mode === "signup") return "Create account";
     if (mode === "forgot") return "Reset your password";
     if (mode === "recovery") return "Choose a new password";
-    return "Log in to Vaada";
+    return "Log in";
   }, [mode]);
 
   const chooseMode = (nextMode: Mode) => {
@@ -66,11 +70,11 @@ export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
     setPassword("");
     setConfirmPassword("");
     setErrorMessage("");
-    if (nextMode === "login" || nextMode === "signup") {
+    if (nextMode === "login") {
       const params = new URLSearchParams(window.location.search);
       params.delete("mode");
       const query = params.toString();
-      window.history.replaceState(null, "", `${nextMode === "signup" ? "/signup" : "/login"}${query ? `?${query}` : ""}`);
+      window.history.replaceState(null, "", `/login${query ? `?${query}` : ""}`);
     }
   };
 
@@ -154,12 +158,16 @@ export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
     }
   };
 
-  return <section className={styles.authPage}><div className={styles.authPanel}>
+  return <section className={styles.authPage}>
+    <div className={styles.authTopbar}>
+      <Link href="/" aria-label="Go to Vaada home"><VaadaLogo className={styles.logo} tagline tone="light" /></Link>
+      <Link className={styles.homeLink} href="/">Go home</Link>
+    </div>
+    <div className={styles.authPanel}>
     <div className={styles.heading}>
-      <p className={styles.eyebrow}>{mode === "signup" ? "Create account" : mode === "forgot" ? "Account recovery" : "Vaada account"}</p>
       <h1>{title}</h1>
-      {mode === "login" && <p className={styles.switchText}>New to Vaada? <button className={styles.textButton} type="button" onClick={() => chooseMode("signup")}>Create an account</button></p>}
-      {mode === "signup" && <p className={styles.switchText}>Already have an account? <button className={styles.textButton} type="button" onClick={() => chooseMode("login")}>Log in</button></p>}
+      {mode === "login" && <p className={styles.switchText}>New to Vaada? <Link className={styles.highlightLink} href={`/signup${nextSuffix}`}>Create an account</Link></p>}
+      {mode === "signup" && <p className={styles.switchText}>Already have an account? <Link className={styles.highlightLink} href={`/login${nextSuffix}`}>Log in</Link></p>}
     </div>
     {(mode === "login" || mode === "signup") && <button type="button" className={styles.googleButton} onClick={signInWithGoogle} disabled={busy}><GoogleMark /><span>Continue with Google</span></button>}
     {(mode === "login" || mode === "signup") && <div className={styles.divider}><span>or</span></div>}

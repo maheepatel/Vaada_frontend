@@ -37,6 +37,7 @@ test("account UI supports Google, password login, signup and password recovery",
   const login = await read("app/login/page.tsx");
   const signup = await read("app/signup/page.tsx");
   const css = await read("components/auth-form.module.css");
+  const layout = await read("app/layout.tsx");
   assert.match(source, /signInWithOAuth/);
   assert.match(source, /provider: "google"/);
   assert.match(source, /signInWithPassword/);
@@ -51,9 +52,14 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(signup, /initialMode="signup"/);
   assert.match(login, /<Suspense fallback=\{null\}>/);
   assert.match(signup, /<Suspense fallback=\{null\}>/);
+  assert.doesNotMatch(login, /SiteHeader|SiteFooter|site-shell|route-shell/);
+  assert.doesNotMatch(signup, /SiteHeader|SiteFooter|site-shell|route-shell/);
   assert.match(css, /\.primaryButton \{/);
   assert.match(css, /\.googleButton \{/);
+  assert.match(css, /border-radius: 999px/);
+  assert.match(css, /\.highlightLink \{/);
   assert.match(css, /width: 100%/);
+  assert.match(layout, /<Toaster position="top-left"/);
 });
 
 test("private pages and write actions share one authentication policy", async () => {
