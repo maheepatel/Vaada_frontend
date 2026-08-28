@@ -68,6 +68,35 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.doesNotMatch(globalCss, /login-page|auth-card|google-auth-button|auth-submit|auth-secondary|forgot-password|password-control|auth-divider|auth-privacy-note/);
 });
 
+test("Supabase OAuth uses the cookie based PKCE client and a safe callback", async () => {
+  const browserClient = await read("lib/supabase/client.ts");
+  const serverClient = await read("lib/supabase/server.ts");
+  const callback = await read("app/auth/callback/route.ts");
+  const config = await read("lib/supabase/config.ts");
+  assert.match(browserClient, /createBrowserClient/);
+  assert.match(serverClient, /createSupabaseServerClient/);
+  assert.match(serverClient, /getAll\(\)/);
+  assert.match(serverClient, /setAll\(cookiesToSet\)/);
+  assert.match(callback, /exchangeCodeForSession/);
+  assert.match(callback, /!requestedNext\.startsWith\("\/\/"\)/);
+  assert.match(callback, /Cache-Control/);
+  assert.match(config, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
+  assert.match(config, /NEXT_PUBLIC_SUPABASE_ANON_KEY/);
+  assert.doesNotMatch(serverClient, /cookieStore\.toString\(\)/);
+});
+
+test("Vercel refuses to publish a build without auth and backend variables", async () => {
+  const script = await read("scripts/check-deployment-env.mjs");
+  const packageJson = await read("package.json");
+  assert.match(script, /process\.env\.VERCEL === "1"/);
+  assert.match(script, /NEXT_PUBLIC_SUPABASE_URL/);
+  assert.match(script, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
+  assert.match(script, /NEXT_PUBLIC_SUPABASE_ANON_KEY/);
+  assert.match(script, /VAADA_API_URL/);
+  assert.match(script, /NEXT_PUBLIC_VAADA_API_URL/);
+  assert.match(packageJson, /check-deployment-env\.mjs && next build/);
+});
+
 test("private pages and write actions share one authentication policy", async () => {
   const provider = await read("components/auth-provider.tsx");
   const guard = await read("components/protected-action.tsx");

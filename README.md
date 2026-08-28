@@ -15,7 +15,7 @@ Configure:
 - `VAADA_API_URL`: private/server URL for the standalone backend.
 - `NEXT_PUBLIC_VAADA_API_URL`: browser-accessible backend URL used by forms and reviewer tools.
 - `NEXT_PUBLIC_VAADA_APP_URL`: external Expo/App Store/Play Store app URL.
-- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`: public Supabase Auth credentials only.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: public Supabase Auth credentials only. The legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY` name is also accepted.
 
 The website keeps a bundled read-only seed register for graceful fallback. Submission, extraction, proof upload, review and production data access go through `vaada-backend`.
 
@@ -28,8 +28,8 @@ Never add the Supabase service role key, AI provider secrets or backend credenti
 1. Import `maheepatel/Vaada_frontend` in Vercel.
 2. Keep the detected framework as **Next.js**.
 3. Keep the standard build command `npm run build`.
-4. Add the required environment variables from `.env.example`.
-5. Deploy.
+4. Add the required environment variables from `.env.example` to the Production, Preview and Development environments.
+5. Deploy again after saving the variables. Vercel does not add newly saved variables to an older deployment.
 
 Vercel will create preview deployments for branches and a production deployment from `main`.
 

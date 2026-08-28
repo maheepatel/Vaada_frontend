@@ -22,5 +22,5 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body><AuthProvider><SmoothScroll /><ScrollProgress /><AccountabilityBackdrop />{children}<Toaster position="top-right" richColors /></AuthProvider></body></html>;
+  return <html lang="en"><body><AuthProvider><SmoothScroll /><ScrollProgress /><AccountabilityBackdrop />{children}<Toaster position="top-left" richColors /></AuthProvider></body></html>;
 }
