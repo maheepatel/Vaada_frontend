@@ -89,7 +89,9 @@ export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
     if (!supabase) return failUnavailable();
     setBusy(true);
     setErrorMessage("");
-    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: `${window.location.origin}${destinationFromLocation()}` } });
+    const destination = destinationFromLocation();
+    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(destination)}`;
+    const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: callbackUrl } });
     if (error) {
       setBusy(false);
       const message = "Google sign-in could not be started. Please try again.";
