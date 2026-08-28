@@ -33,8 +33,10 @@ test("accepted images appear as original letters, detailed proof and completed-c
 });
 
 test("account UI supports Google, password login, signup and password recovery", async () => {
-  const source = await read("app/login/page.tsx");
-  const css = await read("app/globals.css");
+  const source = await read("components/auth-form.tsx");
+  const login = await read("app/login/page.tsx");
+  const signup = await read("app/signup/page.tsx");
+  const css = await read("components/auth-form.module.css");
   assert.match(source, /signInWithOAuth/);
   assert.match(source, /provider: "google"/);
   assert.match(source, /signInWithPassword/);
@@ -43,8 +45,11 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(source, /full_name: name\.trim\(\)/);
   assert.doesNotMatch(source, /signInWithOtp|magic|secure link/i);
   assert.doesNotMatch(source, /Authentication is waiting|environment variables|Supabase environment/i);
-  assert.match(css, /\.auth-submit,\s*\.auth-secondary \{\s*width: 100%/);
-  assert.match(css, /\.google-auth-button \{\s*width: 100%/);
+  assert.match(login, /initialMode="login"/);
+  assert.match(signup, /initialMode="signup"/);
+  assert.match(css, /\.primaryButton \{/);
+  assert.match(css, /\.googleButton \{/);
+  assert.match(css, /width: 100%/);
 });
 
 test("private pages and write actions share one authentication policy", async () => {
@@ -55,9 +60,11 @@ test("private pages and write actions share one authentication policy", async ()
   const header = await read("components/site-header.tsx");
   assert.match(provider, /!user\.is_anonymous/);
   assert.match(guard, /Please log in/);
+  assert.match(guard, /router\.push\(loginHref\(href\)\)/);
   assert.match(records, /<AuthGuard>/);
   assert.match(review, /roles=\{\["reviewer","admin"\]\}/);
   assert.match(header, /"Log in"/);
+  assert.match(header, /"Sign up"/);
 });
 
 test("public attribution remains optional while every submission stays authenticated", async () => {
@@ -112,6 +119,8 @@ test("the page shell ends with the footer instead of a transparent dock gap", as
   const css = await read("app/globals.css");
   assert.match(css, /\.site-shell \{\s*min-height: 100svh;\s*display: flex;[\s\S]*?padding-bottom: 0;/);
   assert.match(css, /\.site-shell > footer \{ width: 100%; margin-top: auto; \}/);
+  assert.doesNotMatch(css, /\.site-shell \{\s*background:transparent; padding-bottom:88px; \}/);
+  assert.doesNotMatch(css, /\.site-shell \{\s*padding-bottom:76px; \}/);
 });
 
 test("state pages initialize both visible location filters from the route", async () => {

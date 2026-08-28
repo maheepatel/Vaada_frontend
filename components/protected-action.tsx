@@ -25,11 +25,7 @@ export function ProtectedActionLink({ href, children, className, hideWhenSignedO
       event.preventDefault();
       return toast.message("Checking your account…");
     }
-    if (!configured) {
-      event.preventDefault();
-      return toast.error("Sign-in is temporarily unavailable. Please try again later.");
-    }
-    if (!signedIn) {
+    if (!configured || !signedIn) {
       event.preventDefault();
       toast.info("Please log in to continue.");
       router.push(loginHref(href));

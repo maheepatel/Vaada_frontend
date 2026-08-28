@@ -20,6 +20,8 @@ export function SiteHeader() {
   const pathname = usePathname();
   const { loading, signedIn } = useAuth();
   const active = (href: string, exact?: boolean) => exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`) || (href === "/promises" && pathname.startsWith("/states/"));
+  const authHref = pathname === "/login" ? "/signup" : "/login";
+  const authLabel = pathname === "/login" ? "Sign up" : pathname === "/signup" ? "Log in" : loading ? "Checking…" : "Log in";
   return (
     <>
     <div className="site-top-actions">
@@ -27,10 +29,10 @@ export function SiteHeader() {
         <div className="site-brand-row"><VaadaLogo className="site-corner-logo" tagline tone="light" /><LiveVisitors /></div>
         {pathname !== "/" && <BackButton className="route-back-control" />}
       </div>
-      {pathname !== "/login" && <div className="site-top-right">{signedIn
+      <div className="site-top-right">{signedIn
         ? <Link className="site-app-launch" href="/account"><span aria-hidden="true">●</span> Account</Link>
-        : <Link className="site-app-launch" href="/login"><span aria-hidden="true">○</span> {loading ? "Checking…" : "Log in"}</Link>}
-      </div>}
+        : <Link className="site-app-launch" href={authHref}><span aria-hidden="true">○</span> {authLabel}</Link>}
+      </div>
     </div>
     <header className="floating-dock site-dock">
       <nav className="dock-links" aria-label="Primary navigation">
