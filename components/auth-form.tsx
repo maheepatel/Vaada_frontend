@@ -1,8 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useAuth } from "@/components/auth-provider";
 import { VaadaLogo } from "@/components/vaada-logo";
@@ -160,8 +160,7 @@ export function AuthForm({ initialMode }: { initialMode: "login" | "signup" }) {
 
   return <section className={styles.authPage}>
     <div className={styles.authTopbar}>
-      <Link href="/" aria-label="Go to Vaada home"><VaadaLogo className={styles.logo} tagline tone="light" /></Link>
-      <Link className={styles.homeLink} href="/">Go home</Link>
+      <VaadaLogo className={styles.logo} tagline tone="dark" />
     </div>
     <div className={styles.authPanel}>
     <div className={styles.heading}>

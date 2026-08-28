@@ -54,10 +54,14 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(signup, /<Suspense fallback=\{null\}>/);
   assert.doesNotMatch(login, /SiteHeader|SiteFooter|site-shell|route-shell/);
   assert.doesNotMatch(signup, /SiteHeader|SiteFooter|site-shell|route-shell/);
+  assert.match(source, /VaadaLogo className=\{styles\.logo\} tagline tone="dark"/);
+  assert.doesNotMatch(source, /Go home|aria-label="Go to Vaada home"/);
   assert.match(css, /\.primaryButton \{/);
   assert.match(css, /\.googleButton \{/);
   assert.match(css, /border-radius: 999px/);
   assert.match(css, /\.highlightLink \{/);
+  assert.match(css, /font: 520 18px\/1\.3 "Manrope Variable"/);
+  assert.match(css, /\.logo :global\(\.vaada-logo-mark\)/);
   assert.match(css, /width: 100%/);
   assert.match(layout, /<Toaster position="top-left"/);
 });
