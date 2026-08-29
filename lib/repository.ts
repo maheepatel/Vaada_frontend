@@ -19,7 +19,7 @@ export async function getCommitmentBySlug(slug: string): Promise<Commitment | un
   const endpoint = backendEndpoint(`/v1/promises/${encodeURIComponent(slug)}`);
   if (!endpoint) return getSeedBySlug(slug);
   try {
-    const response = await fetch(endpoint, { next: { revalidate: 60 } });
+    const response = await fetch(endpoint, { cache: "no-store" });
     if (!response.ok) return getSeedBySlug(slug);
     const body = await response.json() as { commitment?: Commitment };
     return body.commitment ?? getSeedBySlug(slug);

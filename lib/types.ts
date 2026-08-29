@@ -66,6 +66,7 @@ export interface Commitment {
   lastReviewedAt: string;
   evidence: EvidenceItem[];
   timeline: TimelineEvent[];
+  pendingCompletionProofs?: number;
 }
 
 export interface ExtractedDraft {

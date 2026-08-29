@@ -35,7 +35,7 @@ test("accepted images appear as original letters, detailed proof and completed-c
   assert.match(explorer, /VERIFIED COMPLETION PROOF/);
 });
 
-test("account UI supports Google, password login, signup and password recovery", async () => {
+test("account UI supports compact Google, password login, immediate signup and password recovery", async () => {
   const source = await read("components/auth-form.tsx");
   const login = await read("app/login/page.tsx");
   const signup = await read("app/signup/page.tsx");
@@ -45,11 +45,17 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(source, /provider: "google"/);
   assert.match(source, /signInWithPassword/);
   assert.match(source, /signUp/);
-  assert.match(source, /resetPasswordForEmail/);
   assert.match(source, /full_name: name\.trim\(\)/);
+  assert.match(source, /if \(!data\.session\)/);
+  assert.match(source, /await refresh\(\)/);
+  assert.match(source, /router\.replace\(destination\)/);
   assert.match(source, /useSearchParams/);
-  assert.doesNotMatch(source, /setMode\("recovery"\)/);
-  assert.doesNotMatch(source, /signInWithOtp|magic|secure link/i);
+  assert.match(source, /resetPasswordForEmail/);
+  assert.match(source, /updateUser\(\{ password \}\)/);
+  assert.match(source, /mode !== "recovery"/);
+  assert.match(source, /An account already exists for this email/);
+  assert.match(source, /identities\.length === 0/);
+  assert.doesNotMatch(source, /signInWithOtp|magic link|secure link/i);
   assert.doesNotMatch(source, /Authentication is waiting|environment variables|Supabase environment/i);
   assert.match(login, /initialMode="login"/);
   assert.match(signup, /initialMode="signup"/);
@@ -62,8 +68,10 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(css, /\.primaryButton \{/);
   assert.match(css, /\.googleButton \{/);
   assert.match(css, /border-radius: 999px/);
-  assert.match(css, /\.highlightLink \{/);
-  assert.match(css, /font: 520 18px\/1\.3 "Manrope Variable"/);
+  assert.match(css, /\.modeTabs \{/);
+  assert.match(css, /\.modeTabs a\.activeTab::after/);
+  assert.match(css, /background: var\(--coral\)/);
+  assert.match(css, /font: 520 16px\/1\.3 "Manrope Variable"/);
   assert.match(css, /\.logo :global\(\.vaada-logo-mark\)/);
   assert.match(css, /width: 100%/);
   assert.match(layout, /<Toaster position="top-right"/);
@@ -76,12 +84,15 @@ test("Supabase OAuth uses the cookie based PKCE client and a safe callback", asy
   const serverClient = await read("lib/supabase/server.ts");
   const callback = await read("app/auth/callback/route.ts");
   const config = await read("lib/supabase/config.ts");
+  const redirects = await read("lib/auth-redirect.ts");
   assert.match(browserClient, /createBrowserClient/);
   assert.match(serverClient, /createSupabaseServerClient/);
   assert.match(serverClient, /getAll\(\)/);
   assert.match(serverClient, /setAll\(cookiesToSet\)/);
   assert.match(callback, /exchangeCodeForSession/);
-  assert.match(callback, /!requestedNext\.startsWith\("\/\/"\)/);
+  assert.match(callback, /safeAuthDestination/);
+  assert.match(redirects, /destination\.origin !== base\.origin/);
+  assert.match(redirects, /fallback = "\/"/);
   assert.match(callback, /Cache-Control/);
   assert.match(config, /NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY/);
   assert.match(config, /NEXT_PUBLIC_SUPABASE_ANON_KEY/);
@@ -167,6 +178,8 @@ test("account preferences are editable without making authorization roles self-s
   assert.match(account, /method: "PATCH"/);
   assert.match(account, /\/v1\/me\/profile/);
   assert.match(account, /government_official/);
+  assert.match(account, /news_reporter/);
+  assert.match(account, /News reporter/);
   assert.match(account, /defaultSubmitAnonymously/);
   assert.match(account, /Save settings/);
   assert.match(account, /Reviewer and admin access is assigned by Vaada/);
@@ -188,9 +201,31 @@ test("promise intake and completion proof use separate guarded workflows", async
   assert.match(proofRoute, /<ProofSubmission/);
   assert.match(promise, /extractPromiseDraft/);
   assert.match(promise, /Add at least one original source/);
-  assert.match(proof, /HUMAN REVIEW ONLY/);
+  assert.match(proof, /REVIEW REQUIRED/);
   assert.doesNotMatch(proof, /extractPromiseDraft|\/v1\/extract/);
+  assert.doesNotMatch(proof, /Evidence title|What does this proof show\?|Evidence date/);
+  assert.match(proof, /Submit proof →/);
+  assert.match(proof, /profile\.defaultSubmitAnonymously/);
+  assert.match(promise, /source-cross-check/);
+  assert.match(promise, /Open original source link/);
   assert.match(detail, /\/submit-proof\?promise=/);
+});
+
+test("pending completion proof exposes status only and accepted proof exposes both supported sources", async () => {
+  const detail = await read("app/promises/[slug]/page.tsx");
+  const types = await read("lib/types.ts");
+  const repository = await read("lib/repository.ts");
+  assert.match(types, /pendingCompletionProofs\?: number/);
+  assert.match(detail, /UNDER REVIEW/);
+  assert.match(detail, /pending link and file remain private/);
+  assert.match(detail, /Open completion source link/);
+  assert.match(detail, /View uploaded/);
+  assert.match(repository, /cache: "no-store"/);
+});
+
+test("auth forms never collect or display a phone number", async () => {
+  const source = `${await read("components/auth-form.tsx")}\n${await read("app/account/page.tsx")}`;
+  assert.doesNotMatch(source, /\bphone\b/i);
 });
 
 test("route changes reset scroll position instead of restoring the previous footer position", async () => {

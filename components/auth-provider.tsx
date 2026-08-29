@@ -6,7 +6,7 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export type AppRole = "citizen" | "reviewer" | "admin";
-export type ContributorType = "citizen" | "government_official";
+export type ContributorType = "citizen" | "government_official" | "news_reporter";
 export type AccountProfile = {
   displayName: string;
   contributorType: ContributorType;
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setRole((data?.role as AppRole | undefined) ?? "citizen");
     setProfile({
       displayName: String(data?.display_name ?? nextSession?.user.user_metadata?.full_name ?? ""),
-      contributorType: data?.contributor_type === "government_official" ? "government_official" : "citizen",
+      contributorType: data?.contributor_type === "government_official" || data?.contributor_type === "news_reporter" ? data.contributor_type : "citizen",
       defaultSubmitAnonymously: data?.default_submit_anonymously !== false,
       preferencesConfiguredAt: data?.preferences_configured_at ? String(data.preferences_configured_at) : undefined,
       updatedAt: data?.updated_at ? String(data.updated_at) : undefined,

@@ -1559,6 +1559,20 @@ footer {
 }
 
 /* Account preferences and the two evidence workflows. */
+.proof-review-status { display: grid; gap: 8px; margin: 28px 0; padding: 20px; border: 1px solid rgba(255,103,92,.55); border-radius: 16px; background: rgba(255,103,92,.08); }
+.proof-review-status span { color: var(--coral); font: 800 9px/1 "IBM Plex Mono",monospace; letter-spacing: .08em; }
+.proof-review-status strong { color: var(--paper); font-size: 16px; line-height: 1.4; }
+.proof-review-status p { margin: 0; color: var(--muted); font-size: 12px; }
+.source-cross-check { display: grid; gap: 14px; margin: 8px 0 24px; padding: 18px; border: 1px solid rgba(31,42,44,.25); border-radius: 16px; background: rgba(255,255,255,.28); }
+.source-cross-check > div:first-child { display: grid; gap: 6px; }
+.source-cross-check > div:first-child span { color: var(--coral); font: 800 8px/1 "IBM Plex Mono",monospace; letter-spacing: .08em; }
+.source-cross-check > div:first-child strong { color: var(--ink); font-size: 14px; }
+.source-cross-check > a { width: fit-content; color: var(--ink); font: 760 10px/1.5 "IBM Plex Mono",monospace; border-bottom: 1px solid var(--coral); }
+.source-cross-check .evidence-upload { margin-top: 0; }
+.proof-selection-gate { display: grid; gap: 18px; }
+.proof-selection-gate h2 { margin: 0; color: var(--ink); font-size: clamp(34px,4vw,52px); letter-spacing: -.045em; }
+.proof-selection-gate p:not(.eyebrow) { margin: 0; color: #526662; line-height: 1.6; }
+.proof-selection-gate .button { width: fit-content; }
 .secure-account-page { padding-bottom: 96px; }
 .account-heading { display:grid; grid-template-columns:minmax(0,1.3fr) minmax(280px,.7fr); align-items:end; gap:56px; max-width:1320px; margin:0 auto 64px; }
 .account-heading h1 { margin-bottom:0; }
@@ -1583,7 +1597,8 @@ footer {
 .account-facts dt { color:#675e52; font:700 8px "IBM Plex Mono",monospace; text-transform:uppercase; }
 .account-facts dd { margin:16px 0 0; font-size:18px; }
 .account-facts small { display:block; max-width:340px; margin-top:8px; color:#675e52; font-size:11px; line-height:1.5; }
-.account-choice-grid,.submission-choice-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:26px; }
+.account-choice-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:26px; }
+.submission-choice-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:26px; }
 .account-choice-grid > label,.submission-choice-grid > label { display:grid; grid-template-columns:22px 1fr; gap:12px; min-height:128px; padding:20px; border:1px solid rgba(31,42,44,.2); border-radius:16px; background:rgba(255,255,255,.3); cursor:pointer; transition:border-color .2s ease,background .2s ease,transform .2s ease; }
 .account-choice-grid > label:hover,.submission-choice-grid > label:hover { border-color:var(--coral); transform:translateY(-1px); }
 .account-choice-grid > label.selected,.submission-choice-grid > label.selected { border-color:var(--coral); background:rgba(255,103,92,.1); }
@@ -1626,6 +1641,7 @@ footer {
   .account-heading,.account-dashboard { grid-template-columns:1fr; }
   .account-heading { gap:24px; }
   .account-sidebar { position:static; }
+  .account-choice-grid { grid-template-columns:1fr; }
 }
 @media (max-width:700px) {
   .account-field-grid,.account-facts,.account-choice-grid,.submission-choice-grid { grid-template-columns:1fr; }
