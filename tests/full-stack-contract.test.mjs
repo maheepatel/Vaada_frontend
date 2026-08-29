@@ -11,16 +11,19 @@ test("website reads public records from the standalone backend", async () => {
 });
 
 test("submission flow requires an account, uploads owned media and sends the complete deadline contract", async () => {
-  const source = await read("app/submit/page.tsx");
-  assert.doesNotMatch(source, /signInAnonymously/);
-  assert.match(source, /<AuthGuard>/);
-  assert.match(source, /\/v1\/uploads\/proof/);
-  assert.match(source, /mediaAssetId/);
-  assert.match(source, /completion_proof/);
-  assert.match(source, /promise_source/);
-  assert.match(source, /\/v1\/submissions/);
-  assert.match(source, /deadlineStart/);
-  assert.match(source, /deadlineEnd/);
+  const route = await read("app/submit/page.tsx");
+  const promise = await read("components/promise-submission.tsx");
+  const proof = await read("components/proof-submission.tsx");
+  const api = await read("lib/submission-api.ts");
+  assert.doesNotMatch(`${promise}${proof}`, /signInAnonymously/);
+  assert.match(route, /<AuthGuard>/);
+  assert.match(api, /\/v1\/uploads\/proof/);
+  assert.match(api, /\/v1\/submissions/);
+  assert.match(promise, /mediaAssetId/);
+  assert.match(proof, /completion_proof/);
+  assert.match(promise, /promise_source/);
+  assert.match(promise, /deadlineStart/);
+  assert.match(promise, /deadlineEnd/);
 });
 
 test("accepted images appear as original letters, detailed proof and completed-card proof", async () => {
@@ -63,7 +66,7 @@ test("account UI supports Google, password login, signup and password recovery",
   assert.match(css, /font: 520 18px\/1\.3 "Manrope Variable"/);
   assert.match(css, /\.logo :global\(\.vaada-logo-mark\)/);
   assert.match(css, /width: 100%/);
-  assert.match(layout, /<Toaster position="top-left"/);
+  assert.match(layout, /<Toaster position="top-right"/);
   const globalCss = await read("app/globals.css");
   assert.doesNotMatch(globalCss, /login-page|auth-card|google-auth-button|auth-submit|auth-secondary|forgot-password|password-control|auth-divider|auth-privacy-note/);
 });
@@ -113,13 +116,16 @@ test("private pages and write actions share one authentication policy", async ()
 });
 
 test("public attribution remains optional while every submission stays authenticated", async () => {
-  const source = await read("app/submit/page.tsx");
+  const source = await read("components/attribution-choice.tsx");
+  const promise = await read("components/promise-submission.tsx");
+  const proof = await read("components/proof-submission.tsx");
   const types = await read("lib/types.ts");
   const detail = await read("app/promises/[slug]/page.tsx");
   assert.match(source, /Keep my name private/);
-  assert.match(source, /Credit this record to me/);
+  assert.match(source, /Credit my display name/);
   assert.match(source, /Your email is never published/);
-  assert.match(source, /submitAnonymously: !publiclyNamed/);
+  assert.match(promise, /submitAnonymously: !publiclyNamed/);
+  assert.match(proof, /submitAnonymously: !publiclyNamed/);
   assert.match(types, /submittedBy\?: string/);
   assert.match(detail, /Contributed by/);
 });
@@ -139,7 +145,7 @@ test("evidence input validates supported media and renders an image or PDF previ
 });
 
 test("customer-facing pages never expose infrastructure setup instructions", async () => {
-  const paths = ["app/login/page.tsx", "app/submit/page.tsx", "app/review/page.tsx", "app/my-logs/page.tsx", "components/protected-action.tsx", "components/live-visitors.tsx"];
+  const paths = ["app/login/page.tsx", "app/submit/page.tsx", "app/submit-proof/page.tsx", "components/promise-submission.tsx", "components/proof-submission.tsx", "app/review/page.tsx", "app/my-logs/page.tsx", "components/protected-action.tsx", "components/live-visitors.tsx"];
   for (const path of paths) assert.doesNotMatch(await read(path), /environment variables|backend URL is not configured|Supabase environment|Connect backend to continue/i, path);
 });
 
@@ -151,8 +157,40 @@ test("homepage moves Launch App into the hero and protects record creation", asy
 });
 
 test("no server-only secret is referenced by browser code", async () => {
-  const paths = ["app/submit/page.tsx", "app/login/page.tsx", "lib/supabase/client.ts", "lib/repository.ts"];
+  const paths = ["app/submit/page.tsx", "app/submit-proof/page.tsx", "components/promise-submission.tsx", "components/proof-submission.tsx", "lib/submission-api.ts", "app/login/page.tsx", "lib/supabase/client.ts", "lib/repository.ts"];
   for (const path of paths) assert.doesNotMatch(await read(path), /SERVICE_ROLE|OPENAI_API_KEY|CRON_SECRET/);
+});
+
+test("account preferences are editable without making authorization roles self-service", async () => {
+  const account = await read("app/account/page.tsx");
+  const provider = await read("components/auth-provider.tsx");
+  assert.match(account, /method: "PATCH"/);
+  assert.match(account, /\/v1\/me\/profile/);
+  assert.match(account, /government_official/);
+  assert.match(account, /defaultSubmitAnonymously/);
+  assert.match(account, /Save settings/);
+  assert.match(account, /Reviewer and admin access is assigned by Vaada/);
+  assert.doesNotMatch(account, /setRole|name="role"/);
+  assert.match(provider, /contributor_type,default_submit_anonymously,preferences_configured_at/);
+  assert.match(account, /Vaada has not selected this for you/);
+  assert.match(account, /defaultAnonymous === null/);
+});
+
+test("promise intake and completion proof use separate guarded workflows", async () => {
+  const submitRoute = await read("app/submit/page.tsx");
+  const proofRoute = await read("app/submit-proof/page.tsx");
+  const promise = await read("components/promise-submission.tsx");
+  const proof = await read("components/proof-submission.tsx");
+  const detail = await read("app/promises/[slug]/page.tsx");
+  assert.match(submitRoute, /redirect\(`\/submit-proof/);
+  assert.match(submitRoute, /<PromiseSubmission/);
+  assert.match(proofRoute, /<AuthGuard>/);
+  assert.match(proofRoute, /<ProofSubmission/);
+  assert.match(promise, /extractPromiseDraft/);
+  assert.match(promise, /Add at least one original source/);
+  assert.match(proof, /HUMAN REVIEW ONLY/);
+  assert.doesNotMatch(proof, /extractPromiseDraft|\/v1\/extract/);
+  assert.match(detail, /\/submit-proof\?promise=/);
 });
 
 test("route changes reset scroll position instead of restoring the previous footer position", async () => {

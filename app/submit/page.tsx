@@ -1,108 +1,11 @@
-"use client";
-
-import { FormEvent, useEffect, useState } from "react";
-import { toast } from "sonner";
+import { redirect } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
-import { EvidenceUpload } from "@/components/evidence-upload";
-import { useAuth } from "@/components/auth-provider";
 import { AuthGuard } from "@/components/protected-action";
-import { backendEndpoint } from "@/lib/external-services";
-import type { ExtractedDraft } from "@/lib/types";
+import { PromiseSubmission } from "@/components/promise-submission";
 
-const blank: ExtractedDraft = { title: "", promiseText: "", sourceUrl: "", promisedOn: "", deadlineStart: "", deadlineEnd: "", deadlineLabel: "", state: "", district: "", category: "Governance", accountableOffice: "", confidence: {}, warnings: [] };
-const targetSlugFrom = (value: string) => value.trim().replace(/\/$/, "").split("/").pop() ?? "";
-
-export default function SubmitPage() {
-  const [step, setStep] = useState<"source" | "review" | "done">("source");
-  const [mode, setMode] = useState<"promise" | "proof">("promise");
-  const [targetCommitment, setTargetCommitment] = useState("");
-  const [sourceUrl, setSourceUrl] = useState("");
-  const [rawText, setRawText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [draft, setDraft] = useState(blank);
-  const [publiclyNamed, setPubliclyNamed] = useState(false);
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [receipt, setReceipt] = useState("");
-  const { session } = useAuth();
-  const isProof = mode === "proof";
-  const extractionEndpoint = backendEndpoint("/v1/extract");
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const query = new URLSearchParams(window.location.search);
-      setMode(query.get("mode") === "proof" ? "proof" : "promise");
-      setTargetCommitment(query.get("promise") ?? "");
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  const extract = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!session) return toast.error("Please log in before using assisted extraction.");
-    if (isProof && !targetSlugFrom(targetCommitment)) return toast.error("Choose the promise this proof belongs to.");
-    setBusy(true);
-    try {
-      const form = new FormData();
-      form.set("sourceUrl", sourceUrl);
-      form.set("rawText", rawText);
-      if (file) form.set("file", file);
-      if (!extractionEndpoint) throw new Error("Assisted extraction is temporarily unavailable. Please try again later.");
-      const response = await fetch(extractionEndpoint, { method: "POST", headers: { authorization: `Bearer ${session.access_token}` }, body: form });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error);
-      setDraft({ ...blank, ...body.draft });
-      setStep("review");
-      toast.success(body.mode === "ai" ? "AI draft ready. Check every field." : "Draft ready. Check every field.");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not read this source.");
-    } finally { setBusy(false); }
-  };
-
-  const update = (key: keyof ExtractedDraft, value: string) => setDraft((old) => ({ ...old, [key]: value }));
-
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!session) return toast.error("Please log in before submitting a promise or proof.");
-    setBusy(true);
-    try {
-      let mediaAssetId: string | undefined;
-      let proofSha256: string | undefined;
-      let proofSizeBytes: number | undefined;
-      let proofOriginalName: string | undefined;
-      if (file) {
-        const uploadEndpoint = backendEndpoint("/v1/uploads/proof");
-        if (!uploadEndpoint) throw new Error("File uploads are temporarily unavailable. Please try again later.");
-        const upload = new FormData();
-        upload.set("file", file);
-        upload.set("kind", isProof ? "completion_proof" : "promise_source");
-        const uploaded = await fetch(uploadEndpoint, { method: "POST", headers: { authorization: `Bearer ${session.access_token}` }, body: upload });
-        const uploadedBody = await uploaded.json();
-        if (!uploaded.ok) throw new Error(uploadedBody.error ?? "The proof upload could not be saved.");
-        mediaAssetId = uploadedBody.asset?.id;
-        proofSha256 = uploadedBody.asset?.sha256;
-        proofSizeBytes = uploadedBody.asset?.sizeBytes;
-        proofOriginalName = uploadedBody.asset?.originalName;
-      }
-      const endpoint = backendEndpoint("/v1/submissions");
-      if (!endpoint) throw new Error("Submissions are temporarily unavailable. Please try again later.");
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "content-type": "application/json", authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ ...draft, submitterName: publiclyNamed ? name.trim() : undefined, submitAnonymously: !publiclyNamed, mediaAssetId, proofMimeType: file?.type, proofSha256, proofSizeBytes, proofOriginalName, rawText, submissionKind: mode, targetCommitmentSlug: isProof ? targetSlugFrom(targetCommitment) : undefined }),
-      });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error);
-      setReceipt(body.submission.id);
-      setStep("done");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Submission failed.");
-    } finally { setBusy(false); }
-  };
-
-  return <main className="site-shell route-shell"><SiteHeader /><AuthGuard><section className="submit-shell"><div className="submit-intro"><p className="eyebrow">{isProof ? "PUBLIC PROOF INTAKE" : "SIMPLE INTAKE"}</p><h1>{isProof ? <>Show what<br /><span>changed.</span></> : <>Share the source.<br /><span>We draft the rest.</span></>}</h1><p>{isProof ? "Upload a completion photo, signed government letter, public update or social post. AI reads it; a human decides whether the promise moves." : "Paste the public text and link, or attach a government letter. The assistant extracts editable fields; no AI output goes public without human review."}</p><ol><li className={step === "source" ? "active" : ""}>01 · Source</li><li className={step === "review" ? "active" : ""}>02 · Check draft</li><li className={step === "done" ? "active" : ""}>03 · Receipt</li></ol></div>
-    <div className="intake-panel">{step === "source" && <form onSubmit={extract}><div className="form-heading"><span>STEP 01 · {isProof ? "PROOF" : "PROMISE"}</span><h2>{isProof ? "What proves progress?" : "What did you see?"}</h2></div>{isProof && <label>Promise record link or ID<input required value={targetCommitment} onChange={(event) => setTargetCommitment(event.target.value)} placeholder="Paste the Vaada record link or promise ID" /></label>}<label>{isProof ? "Public proof or Twitter/X link" : "Public source or Twitter/X link"}<input type="url" value={sourceUrl} onChange={(event) => setSourceUrl(event.target.value)} placeholder="https://x.com/... or government website" /></label><label>{isProof ? "Paste the progress update or letter text" : "Paste the announcement or extracted document text"}<textarea rows={9} value={rawText} onChange={(event) => setRawText(event.target.value)} placeholder="Paste the exact wording here. Do not summarize if you can copy the original." /></label><EvidenceUpload file={file} onChange={setFile} kind={isProof ? "proof" : "promise"} /><div className="ai-boundary"><strong>AI CAN</strong><span>Read public links, screenshots and PDFs; extract names, dates, places and stated outcomes.</span><strong>AI CANNOT</strong><span>Publish, verify truth, close a promise, or change public progress.</span></div><button className="button button-primary" disabled={busy || (!sourceUrl && !rawText && !file)}>{busy ? "Reading source…" : "Create editable draft →"}</button></form>}
-    {step === "review" && <form onSubmit={submit}><div className="form-heading"><span>STEP 02 · HUMAN CHECK</span><h2>{isProof ? "Check the evidence draft." : "Check the promise draft."}</h2><p>Blank or uncertain fields are intentional. The reviewer will always inspect the original source.</p></div>{draft.warnings.length > 0 && <div className="warning-box">{draft.warnings.map((warning) => <p key={warning}>! {warning}</p>)}</div>}<label>{isProof ? "Short evidence title" : "Short public title"}<input required value={draft.title} onChange={(event) => update("title", event.target.value)} /></label><label>{isProof ? "What does this evidence show?" : "Exact promise wording"}<textarea required minLength={20} rows={6} value={draft.promiseText} onChange={(event) => update("promiseText", event.target.value)} /></label>{!isProof && <><div className="field-pair"><label>State<input required value={draft.state} onChange={(event) => update("state", event.target.value)} /></label><label>District<input value={draft.district} onChange={(event) => update("district", event.target.value)} /></label></div><div className="field-pair"><label>Sector<input required value={draft.category} onChange={(event) => update("category", event.target.value)} /></label><label>Promise date<input type="date" value={draft.promisedOn} onChange={(event) => update("promisedOn", event.target.value)} /></label></div><div className="field-pair"><label>Earliest stated completion<input type="date" value={draft.deadlineStart} onChange={(event) => update("deadlineStart", event.target.value)} /></label><label>Latest stated completion<input type="date" min={draft.deadlineStart || undefined} value={draft.deadlineEnd} onChange={(event) => update("deadlineEnd", event.target.value)} /></label></div><label>Exact timeframe wording (leave blank if absent)<input value={draft.deadlineLabel} onChange={(event) => update("deadlineLabel", event.target.value)} placeholder="For example, within 24 to 72 hours" /></label><label>Responsible office or person<input value={draft.accountableOffice} onChange={(event) => update("accountableOffice", event.target.value)} /></label></>}{isProof && <label>Evidence date<input type="date" value={draft.promisedOn} onChange={(event) => update("promisedOn", event.target.value)} /></label>}{file && <EvidenceUpload file={file} onChange={setFile} kind={isProof ? "proof" : "promise"} />}<fieldset className="attribution-choice"><legend>Public credit</legend><p>Your account stays attached to the private audit either way. Your email is never published.</p><label className="choice"><input name="credit" type="radio" checked={!publiclyNamed} onChange={() => setPubliclyNamed(false)} /> Keep my name private</label><label className="choice"><input name="credit" type="radio" checked={publiclyNamed} onChange={() => setPubliclyNamed(true)} /> Credit this record to me</label>{publiclyNamed && <label>Public name<input required minLength={2} maxLength={120} value={name} onChange={(event) => setName(event.target.value)} /></label>}</fieldset><div className="form-actions"><button type="button" className="button button-ghost" onClick={() => setStep("source")}>← Back</button><button className="button button-primary" disabled={busy || (publiclyNamed && name.trim().length < 2)}>{busy ? "Saving securely…" : "Send for human review →"}</button></div></form>}
-    {step === "done" && <div className="success-state"><span>✓</span><p className="eyebrow">PRIVATE RECEIPT</p><h2>{isProof ? "Your proof is in the review queue." : "Your source is in the review queue."}</h2><p>Nothing changes publicly yet. Save this receipt to follow the decision without exposing your identity.</p><code>{receipt}</code><div><a className="button button-primary" href="/my-logs">View my records →</a><a className="button button-ghost" href="/promises">Explore register</a></div></div>}</div></section></AuthGuard><SiteFooter /></main>;
+export default async function SubmitPage({ searchParams }: { searchParams: Promise<{ mode?: string; promise?: string }> }) {
+  const params = await searchParams;
+  if (params.mode === "proof") redirect(`/submit-proof${params.promise ? `?promise=${encodeURIComponent(params.promise)}` : ""}`);
+  return <main className="site-shell route-shell"><SiteHeader /><AuthGuard><PromiseSubmission /></AuthGuard><SiteFooter /></main>;
 }

@@ -6,12 +6,21 @@ import { getBrowserSupabase } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export type AppRole = "citizen" | "reviewer" | "admin";
+export type ContributorType = "citizen" | "government_official";
+export type AccountProfile = {
+  displayName: string;
+  contributorType: ContributorType;
+  defaultSubmitAnonymously: boolean;
+  preferencesConfiguredAt?: string;
+  updatedAt?: string;
+};
 type AuthState = {
   configured: boolean;
   loading: boolean;
   session: Session | null;
   user: User | null;
   role: AppRole | null;
+  profile: AccountProfile | null;
   signedIn: boolean;
   refresh: () => Promise<void>;
 };
@@ -23,6 +32,7 @@ const isPermanentUser = (user: User | null | undefined) => Boolean(user && !user
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [profile, setProfile] = useState<AccountProfile | null>(null);
   const [loading, setLoading] = useState(isSupabaseConfigured);
 
   const applySession = useCallback(async (nextSession: Session | null) => {
@@ -30,12 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase || !isPermanentUser(nextSession?.user)) {
       setSession(null);
       setRole(null);
+      setProfile(null);
       setLoading(false);
       return;
     }
     setSession(nextSession);
-    const { data } = await supabase.from("profiles").select("role").eq("id", nextSession!.user.id).maybeSingle();
+    const { data } = await supabase.from("profiles").select("role,display_name,contributor_type,default_submit_anonymously,preferences_configured_at,updated_at").eq("id", nextSession!.user.id).maybeSingle();
     setRole((data?.role as AppRole | undefined) ?? "citizen");
+    setProfile({
+      displayName: String(data?.display_name ?? nextSession?.user.user_metadata?.full_name ?? ""),
+      contributorType: data?.contributor_type === "government_official" ? "government_official" : "citizen",
+      defaultSubmitAnonymously: data?.default_submit_anonymously !== false,
+      preferencesConfiguredAt: data?.preferences_configured_at ? String(data.preferences_configured_at) : undefined,
+      updatedAt: data?.updated_at ? String(data.updated_at) : undefined,
+    });
     setLoading(false);
   }, []);
 
@@ -63,9 +81,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     user: session?.user ?? null,
     role,
+    profile,
     signedIn: isPermanentUser(session?.user),
     refresh,
-  }), [loading, refresh, role, session]);
+  }), [loading, profile, refresh, role, session]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
