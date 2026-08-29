@@ -29,11 +29,12 @@ export async function extractPromiseDraft(input: { sourceUrl: string; rawText: s
   const response = await apiFetch("/v1/extract", { method: "POST", headers: { authorization: `Bearer ${input.token}` }, body: form });
   const body = await responseBody(response);
   if (!response.ok) {
+    // Surface the real backend error instead of guessing a cause — the service has
+    // returned the same generic schema error for Twitter links, plain news articles
+    // and images alike, so mapping it to "source type not supported" was misleading.
     const errorMsg = body.error ?? "The promise source could not be read.";
-    if (errorMsg.includes("additionalProperties") || errorMsg.includes("strict Structured Outputs")) {
-      throw new Error("This source type (e.g., Twitter/X) is not yet supported. Please use a direct article link instead.");
-    }
-    throw new Error(errorMsg);
+    console.error("[Vaada API] extraction failed", errorMsg);
+    throw new Error(`${errorMsg} You can still continue and fill in the details yourself.`);
   }
   return body;
 }
@@ -44,7 +45,16 @@ export async function uploadEvidence(input: { file: File; kind: "promise_source"
   form.set("kind", input.kind);
   const response = await apiFetch("/v1/uploads/proof", { method: "POST", headers: { authorization: `Bearer ${input.token}` }, body: form });
   const body = await responseBody(response);
-  if (!response.ok || !body.asset?.id) throw new Error(body.error ?? "The evidence file could not be saved.");
+  if (!response.ok || !body.asset?.id) {
+    const rawError = body.error ?? "The evidence file could not be saved.";
+    console.error("[Vaada API] upload failed", rawError);
+    // A Postgres "permission denied" here is a server-side RLS/grant problem on the
+    // media_assets table, not something wrong with the file or the user's action.
+    if (/permission denied/i.test(rawError)) {
+      throw new Error("The server could not save this file because of a database permissions problem on its end. This is not something wrong with your file — please try again later or contact support.");
+    }
+    throw new Error(rawError);
+  }
   return body.asset as { id: string; sha256: string; sizeBytes: number; originalName: string };
 }
 
