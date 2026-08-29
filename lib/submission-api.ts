@@ -28,7 +28,13 @@ export async function extractPromiseDraft(input: { sourceUrl: string; rawText: s
   if (input.file) form.set("file", input.file);
   const response = await apiFetch("/v1/extract", { method: "POST", headers: { authorization: `Bearer ${input.token}` }, body: form });
   const body = await responseBody(response);
-  if (!response.ok) throw new Error(body.error ?? "The promise source could not be read.");
+  if (!response.ok) {
+    const errorMsg = body.error ?? "The promise source could not be read.";
+    if (errorMsg.includes("additionalProperties") || errorMsg.includes("strict Structured Outputs")) {
+      throw new Error("This source type (e.g., Twitter/X) is not yet supported. Please use a direct article link instead.");
+    }
+    throw new Error(errorMsg);
+  }
   return body;
 }
 
